@@ -140,8 +140,8 @@ export function DashboardPage() {
                 Un historial que permanece.
               </h2>
               <p>
-                Busca en NVD, compara el componente y confirma el CPE que
-                corresponde a lo observado.
+                Confirma el CPE y abre el detalle del activo para consultar CVE,
+                revisar la evidencia y conservar cada ejecución.
               </p>
               <div className="workflow-steps">
                 <span>Registrar</span>

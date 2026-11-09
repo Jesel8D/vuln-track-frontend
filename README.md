@@ -1,13 +1,19 @@
-# VulnTrack · Web V1
+# VulnTrack · Web MVP-B
 
-Aplicación React para el Backend MVP-A real: iniciar sesión → inventario → registro
-→ candidatos CPE → confirmación humana → historial. Sin CVE ficticias ni login demo.
+Aplicación React conectada a FastAPI: login → inventario → CPE confirmado →
+consulta NVD → CVE/evidencia → revisión humana → historial. Los estados y
+resultados provienen del backend real; la correlación no confirma vulnerabilidad.
+
+[Contrato e integración MVP-B](docs/MVP_B_WEB.md) ·
+[Resultados nuevos y capturas](docs/MVP_B_WEB_RESULTS.md).
+El [informe Web V1](docs/TEST_RESULTS.md) se conserva como antecedente.
 
 ## Requisitos
 
 - Node ≥22.12 (validado con24.18), npm y Chrome/Chromium para pruebas de navegador.
 - Docker disponible. PostgreSQL16.15 Alpine fijado por digest en el runner.
-- Repositorios hermanos `backend` en MVP-A2e12bad y `database` en MVP-A80db7fd.
+- Repositorios hermanos: Backend MVP-B `7126a16` y Database MVP-B `e39dd35`
+  (ramas `feat/mvp-b-nvd-cve-backend` / `feat/mvp-b-nvd-cve-database`).
 - Python3.12 y entorno backend con sus dependencias instaladas.
 
 En una recuperación nueva:
@@ -40,11 +46,15 @@ el servicio existente. Puedes omitir ambos flags para obtener puertos libres;
 las URLs exactas se imprimen cuando los servicios están listos.
 
 El runner crea **únicamente su propio PostgreSQL desechable**, con PGDATA tmpfs y
-puerto localhost efímero; aplica V1, privilegios y Alembic0001→0002→0003, crea un
+puerto localhost efímero; aplica V1, privilegios y Alembic0001→0002→0003→0004, crea un
 login SQL mínimo y configura CORS para el origen Vite exacto. FastAPI no recibe la
 URL administrativa de migración y Vite no recibe secretos de base/token/NVD.
 
 **Ctrl+C detiene los servicios propios y descarta todos los datos de esta sesión.**
+El worker CVE corre dentro del único proceso FastAPI (`--workers 1`,
+`CVE_WORKER_ENABLED=true`). No hay que iniciar otro worker. Su arranque aplica
+un enfriamiento NVD mínimo de 60 s compartido con CPE.
+
 No es una instalación persistente ni un respaldo. No reutiliza bases existentes,
 no borra volúmenes ajenos y no aplica Database V2. El modo normal consulta NVD real;
 puede recibir cuotas o errores externos. NVD_API_KEY opcional queda solo en backend.
@@ -71,6 +81,10 @@ VITE_: son públicas. La API remota requiere HTTPS; HTTP solo se acepta en loopb
 - Registro con versión opcional/null, validación e idempotencia.
 - Candidatos oficiales, elección explícita, componente/motivo y revalidación backend.
 - Revisión, sustitución, historial inmutable y consulta del evento actual.
+- Consulta CVE explícita e idempotente desde el detalle del activo.
+- Historial paginado de análisis, snapshot CPE y progreso con polling acotado.
+- Resultados completos/parciales/fallidos, CVE, métricas CVSS versionadas y evidencia.
+- Revisión única con motivo/evidencia y timestamp esperado; conflicto/pérdida de respuesta se reconcilian por GET.
 - Mi cuenta muestra únicamente id/username. No hay edición o registro público.
 - Navegación responsive, estados vacíos/carga/error y página no encontrada.
 
@@ -86,7 +100,9 @@ Logout limpia esta ventana; **no revoca** el JWT servidor.
 
 Registro y confirmación mantienen clave y cuerpo del intento si se pierde una
 respuesta. Los datos quedan bloqueados para reintentar la misma operación y evitar
-duplicados. Al abandonar/recargar se pierde ese estado en memoria: revisa primero
+duplicados. En el nuevo inicio de análisis, el intento incierto sobrevive cambios
+de ruta en esta sesión; logout/expiración lo limpian. Al recargar se pierde la
+sesión y ese estado en memoria: revisa primero
 inventario/historial antes de crear una nueva intención. No hay persistencia offline.
 
 ## Diseño
@@ -123,10 +139,12 @@ varios recorridos sin bloquearse por cuotas; no altera parámetros normales.
 Chrome predeterminado: /usr/bin/google-chrome. Para otra instalación local,
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/ruta/chromium` al ejecutar el runner. También puede
 instalarse Chromium de Playwright y pasar su ruta; no se instala globalmente.
-Capturas locales reproducibles en test-results/visual (ignorado). No se guardan
+Capturas locales reproducibles en test-results/visual y test-results/cve-visual
+(ignorados). Una selección inspeccionada se conserva en docs/screenshots/mvp-b. No se guardan
 storageState, HAR, traces, contraseñas ni tokens en artefactos.
 
-Resultados y capturas inspeccionadas: [docs/TEST_RESULTS.md](docs/TEST_RESULTS.md).
+Resultados actuales: [MVP_B_WEB_RESULTS.md](docs/MVP_B_WEB_RESULTS.md).
+Resultados históricos Web V1: [TEST_RESULTS.md](docs/TEST_RESULTS.md).
 Contratos/tipos: [docs/API.md](docs/API.md), src/types/api.ts y OpenAPI real de FastAPI.
 
 ## Build y siguiente etapa
@@ -136,6 +154,7 @@ rutas SPA con fallback a index.html, HTTPS y cabeceras/CSP adecuadas, y apuntar 
 una API HTTPS operativa con CORS explícito. No se sustituye FastAPI por hosting de
 archivos ni se publican datos de una base local.
 
-MVP-B (consulta CVE, aplicabilidad, evidencia y seguimiento) y RBAC administrativo
-con permisos concretos quedan PENDIENTES. No hay backend/database modificados ni
-ramas extra para esos repositorios; main/rudi/V2/Context permanecen intactos.
+MVP-B Web implementa consulta, evidencia y revisión según el contrato existente.
+Persistencia local de desarrollo, RBAC/admin y preparación de producción quedan
+pendientes. Esta misión solo modifica Frontend; Backend/Database/main/rudi/V2/Context
+permanecen intactos. No hay totales globales CVE: el backend ofrece consultas por activo.

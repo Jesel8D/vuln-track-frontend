@@ -1,3 +1,6 @@
+import { AnalysisHistoryPage } from "../pages/AnalysisHistoryPage";
+import { AnalysisRunPage } from "../pages/AnalysisRunPage";
+import { FindingPage } from "../pages/FindingPage";
 import { Component } from "react";
 import type { ReactNode } from "react";
 import { Navigate, Outlet, Route, Routes, useLocation } from "react-router";
@@ -40,6 +43,18 @@ export function App() {
             element={<IdentificationPage />}
           />
           <Route path="activos/:assetId/historial" element={<HistoryPage />} />
+          <Route
+            path="activos/:assetId/analisis"
+            element={<AnalysisHistoryPage />}
+          />
+          <Route
+            path="activos/:assetId/analisis/:runId"
+            element={<AnalysisRunPage />}
+          />
+          <Route
+            path="activos/:assetId/analisis/:runId/hallazgos/:findingId"
+            element={<FindingPage />}
+          />
           <Route path="cuenta" element={<AccountPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

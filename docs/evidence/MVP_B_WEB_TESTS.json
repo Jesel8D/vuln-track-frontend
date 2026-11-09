@@ -1,0 +1,85 @@
+{
+  "recorded_at": "2026-11-09T15:03:31.927432+00:00",
+  "frontend_base": "2643467864c54226043d43efa5859d38c332ab92",
+  "backend": "7126a161040062b6f0f992c65faf8db07d326464",
+  "database": "e39dd357b28e33912ad062efc813244c62f3eb4b",
+  "environment": {
+    "node": "24.18.0",
+    "npm": "11.16.0",
+    "postgres": "16.15-alpine pinned digest",
+    "browser": "system Google Chrome, Playwright",
+    "timezone": "America/Mexico_City"
+  },
+  "unit_components": {
+    "executed": 72,
+    "passed": 72,
+    "failed": 0,
+    "skipped": 0,
+    "previous_cases": 29,
+    "new_cases": 43
+  },
+  "browser": {
+    "executed": 18,
+    "passed": 18,
+    "failed": 0,
+    "skipped": 0,
+    "previous_cases": 7,
+    "new_cases": 11,
+    "real_services": [
+      "React/Vite",
+      "FastAPI",
+      "JWT/ownership",
+      "PostgreSQL",
+      "CVE worker"
+    ],
+    "mocked": "NVD HTTP transport only, plus explicit browser fault injection scenarios"
+  },
+  "npm_audit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "normal_launcher": "private getpass provisioning, auth/me, Vite, MVP-B OpenAPI, ready and owned process cleanup passed; no external NVD call",
+  "responsive": [
+    {
+      "viewport": 375,
+      "body": 375,
+      "view": "run"
+    },
+    {
+      "viewport": 768,
+      "body": 768,
+      "view": "run"
+    },
+    {
+      "viewport": 1280,
+      "body": 1280,
+      "view": "run"
+    },
+    {
+      "viewport": 1440,
+      "body": 1440,
+      "view": "run"
+    }
+  ],
+  "accessibility": "axe wcag2a/wcag2aa/wcag21aa: zero violations in scanned new run/finding views at 375/768/1280/1440 and history at 375; existing V1 scans retained",
+  "commands": [
+    "npm run check",
+    "npm run format:check",
+    "npm audit --json",
+    "../backend/.venv/bin/ruff check scripts/dev_stack.py tests/e2e/api_server.py",
+    "../backend/.venv/bin/python scripts/dev_stack.py --e2e"
+  ],
+  "logs_sha256": {
+    "check.log": "4e855dc51cf893eb10583561a960ab5a82ce9cbe29e56d20616c14330c80474c",
+    "browser.log": "6ceb8189b1798aa184dd0fa9d94acd694d5b4163210fe51a5a85347c6f573abc",
+    "normal-stack.log": "df79dd8bc678bcc79764adca505098a3c3708bf45c252fd1d8077b446f368524",
+    "python-lint.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "audit.json": "20d9cc09168bc6e4a954261eda1a948ee33162adaebe15fea4b54923b12c44a0",
+    "format-check.log": "565732256ebf370b42216fa50900fb96ebab4edef6f8c37a592d4e18efa9c780"
+  },
+  "screenshots": "Controlled fixtures; CVE-2026-910xx are simulated test identifiers, not other verified NVD records"
+}

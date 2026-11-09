@@ -1,4 +1,13 @@
+import {
+  isAccepted,
+  isRun,
+  isAnalysisList,
+  isFinding,
+  isFindingList,
+} from "./analysisContract";
 import type {
+  AnalysisInput,
+  ReviewInput,
   Asset,
   AssetInput,
   AssetList,
@@ -47,6 +56,20 @@ const messages: Record<string, string> = {
     "La cuota de consulta está ocupada. Espera antes de consultar otra vez.",
   CPE_RATE_LIMIT:
     "Alcanzaste el límite temporal de consultas. Espera antes de continuar.",
+  IDENTIFICATION_REQUIRED:
+    "La identificación actual debe estar confirmada. Actualiza los datos del activo.",
+  VERSION_REQUIRED:
+    "Se requiere una versión observada conocida para esta consulta CVE.",
+  IDENTIFICATION_INCOMPLETE:
+    "El CPE no permite una consulta específica. Revisa el componente y la versión.",
+  ANALYSIS_IN_PROGRESS:
+    "Ya hay una consulta en curso para este activo. Abre su historial.",
+  ANALYSIS_RATE_LIMIT:
+    "Espera antes de iniciar otra consulta para este activo.",
+  CVE_WORKER_UNAVAILABLE:
+    "El procesador de consultas no está disponible. Espera y vuelve a intentarlo.",
+  REVIEW_CONFLICT:
+    "El hallazgo cambió o ya fue revisado. Consulta el estado actual antes de continuar.",
   BODY_TOO_LARGE: "Los datos exceden el tamaño permitido por el servicio.",
 };
 export function errorText(error: unknown): string {
@@ -55,7 +78,7 @@ export function errorText(error: unknown): string {
     : "No pudimos completar la operación.";
 }
 interface RequestOptions {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PATCH";
   body?: unknown;
   key?: string;
   signal?: AbortSignal;
@@ -233,6 +256,62 @@ export class ApiClient {
     return this.request<Identification>(
       `/api/v1/assets/${encodeURIComponent(id)}/cpe-identifications`,
       { method: "POST", body, key },
+    );
+  }
+  private async checked<T>(
+    path: string,
+    guard: (v: unknown) => v is T,
+    options: RequestOptions = {},
+  ): Promise<T> {
+    const value = await this.request<unknown>(path, options);
+    if (!guard(value))
+      throw new ApiError(
+        200,
+        "INVALID_RESPONSE",
+        "El servicio devolvió datos que no coinciden con el contrato. Actualiza manualmente.",
+      );
+    return value;
+  }
+  startAnalysis(assetId: string, body: AnalysisInput, key: string) {
+    return this.checked(
+      `/api/v1/assets/${encodeURIComponent(assetId)}/analyses`,
+      isAccepted,
+      { method: "POST", body, key },
+    );
+  }
+  analyses(assetId: string, limit = 20, offset = 0, signal?: AbortSignal) {
+    return this.checked(
+      `/api/v1/assets/${encodeURIComponent(assetId)}/analyses?${new URLSearchParams({ limit: String(limit), offset: String(offset) })}`,
+      isAnalysisList,
+      { signal },
+    );
+  }
+  analysis(assetId: string, runId: string, signal?: AbortSignal) {
+    return this.checked(
+      `/api/v1/assets/${encodeURIComponent(assetId)}/analyses/${encodeURIComponent(runId)}`,
+      isRun,
+      { signal },
+    );
+  }
+  findings(assetId: string, runId: string, offset = 0, signal?: AbortSignal) {
+    return this.checked(
+      `/api/v1/assets/${encodeURIComponent(assetId)}/analyses/${encodeURIComponent(runId)}/findings?${new URLSearchParams({ limit: "20", offset: String(offset) })}`,
+      isFindingList,
+      { signal },
+    );
+  }
+  finding(id: string, signal?: AbortSignal) {
+    return this.checked(
+      `/api/v1/findings/${encodeURIComponent(id)}`,
+      isFinding,
+      { signal },
+    );
+  }
+  reviewFinding(id: string, body: ReviewInput) {
+    return this.checked(
+      `/api/v1/findings/${encodeURIComponent(id)}`,
+      isFinding,
+      { method: "PATCH", body },
     );
   }
   health(signal?: AbortSignal) {

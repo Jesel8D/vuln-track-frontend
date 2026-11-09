@@ -1,5 +1,6 @@
+import { AnalysisSection } from "../features/analyses/AnalysisSection";
 import { Link, useLocation, useParams } from "react-router";
-import { CheckCircle2, Fingerprint, History } from "lucide-react";
+import { CheckCircle2, History } from "lucide-react";
 import { useAsset, useIdentification } from "../hooks/queries";
 import {
   BackToAssets,
@@ -92,14 +93,7 @@ export function AssetDetailPage() {
         <p className="record-id mono">ID {asset.id}</p>
       </section>
       <CurrentIdentification assetId={assetId} />
-      <div className="future-note">
-        <Fingerprint size={20} aria-hidden="true" />
-        <p>
-          La consulta de CVE y la evaluación de aplicabilidad corresponden a la
-          siguiente etapa. Un CPE confirmado identifica un producto; no confirma
-          vulnerabilidades.
-        </p>
-      </div>
+      <AnalysisSection key={assetId} assetId={assetId} />
     </>
   );
 }

@@ -61,8 +61,8 @@ export function AppLayout() {
           <div className="scope-note">
             <span className="scope-mark" />
             <strong>Una identidad. Con trazabilidad.</strong>
-            <p>Del inventario al CPE oficial, con tu confirmación.</p>
-            <span className="mono small">MVP–A / NVD</span>
+            <p>Del inventario a la evidencia, con tu criterio.</p>
+            <span className="mono small">MVP–B / NVD</span>
           </div>
           <NavLink to="/cuenta" className="nav-link">
             <UserRound size={18} aria-hidden="true" />

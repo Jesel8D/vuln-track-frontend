@@ -18,15 +18,13 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
-from contextlib import suppress
+from contextlib import ExitStack, suppress
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT.parent / "backend"
 DATABASE = ROOT.parent / "database"
-IMAGE = (
-    "postgres:16.15-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab"
-)
+IMAGE = "postgres:16.15-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab"
 
 
 def run(*args, **kwargs):
@@ -56,16 +54,20 @@ def wait_url(url, process):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--username", help="New private development account; password requested by getpass"
+        "--username",
+        help="New private development account; password requested by getpass",
     )
     parser.add_argument(
-        "--e2e", action="store_true", help="Real auth/SQL with controlled NVD test transport"
+        "--e2e",
+        action="store_true",
+        help="Real auth/SQL with controlled NVD test transport",
     )
     parser.add_argument("--api-port", type=int, default=0)
     parser.add_argument("--web-port", type=int, default=0)
     args = parser.parse_args()
     if not args.e2e and (
-        not args.username or not re.fullmatch(r"[a-z0-9][a-z0-9_.-]{0,79}", args.username)
+        not args.username
+        or not re.fullmatch(r"[a-z0-9][a-z0-9_.-]{0,79}", args.username)
     ):
         parser.error("Usa --username con una cuenta nueva ASCII en minúsculas")
     if args.username == "demo_operator":
@@ -89,7 +91,9 @@ def main():
                 try:
                     probe.bind(("127.0.0.1", chosen))
                 except OSError:
-                    parser.error("Puerto ocupado; usar otro o 0 para asignación automática")
+                    parser.error(
+                        "Puerto ocupado; usar otro o 0 para asignación automática"
+                    )
     if args.api_port and args.api_port == args.web_port:
         parser.error("FastAPI y Vite requieren puertos distintos")
     name = "vulntrack-web-test-" + secrets.token_hex(6)
@@ -98,7 +102,7 @@ def main():
     processes = []
     engine = None
     temp = tempfile.TemporaryDirectory(prefix="vulntrack-web-")
-    logs = []
+    log_stack = ExitStack()
 
     def sql(source):
         return run(
@@ -142,7 +146,16 @@ def main():
         for _ in range(120):
             if (
                 subprocess.run(
-                    ["docker", "exec", name, "pg_isready", "-h", "127.0.0.1", "-U", "postgres"],
+                    [
+                        "docker",
+                        "exec",
+                        name,
+                        "pg_isready",
+                        "-h",
+                        "127.0.0.1",
+                        "-U",
+                        "postgres",
+                    ],
                     capture_output=True,
                     check=False,
                 ).returncode
@@ -155,11 +168,15 @@ def main():
         for relative in ["sql/001_schema.sql", "sql/002_privileges.sql"]:
             sql((DATABASE / relative).read_text())
         sql(
-            "CREATE ROLE web_test_api LOGIN PASSWORD '" + password + "' NOSUPERUSER NOCREATEDB "
+            "CREATE ROLE web_test_api LOGIN PASSWORD '"
+            + password
+            + "' NOSUPERUSER NOCREATEDB "
             "NOCREATEROLE NOREPLICATION NOBYPASSRLS; GRANT vulntrack_app TO web_test_api; "
             "GRANT SELECT(password_hash) ON vulntrack.users TO web_test_api;"
         )
-        db_port = int(run("docker", "port", name, "5432").stdout.strip().rsplit(":", 1)[1])
+        db_port = int(
+            run("docker", "port", name, "5432").stdout.strip().rsplit(":", 1)[1]
+        )
 
         def url(user):
             return URL.create(
@@ -202,7 +219,9 @@ def main():
                     ]
                 )
             env.update(
-                TEST_USER=usernames[0], TEST_OTHER_USER=usernames[1], TEST_PASSWORD=test_password
+                TEST_USER=usernames[0],
+                TEST_OTHER_USER=usernames[1],
+                TEST_PASSWORD=test_password,
             )
         else:
             # Existing account procedure, password only through private terminal input.
@@ -218,12 +237,16 @@ def main():
         web_port = args.web_port or free_port()
         while web_port == api_port:
             web_port = free_port()
-        api_url, web_url = f"http://127.0.0.1:{api_port}", f"http://127.0.0.1:{web_port}"
+        api_url, web_url = (
+            f"http://127.0.0.1:{api_port}",
+            f"http://127.0.0.1:{web_port}",
+        )
         env.update(
             DATABASE_URL=url("web_test_api"),
             TOKEN_SECRET=secrets.token_urlsafe(48),
             CORS_ORIGINS=json.dumps([web_url]),
             ENVIRONMENT="test" if args.e2e else "development",
+            CVE_WORKER_ENABLED="true",
             TOKEN_TTL_SECONDS="60" if args.e2e else "900",
             TEST_DISPOSABLE_DATABASE=name,
             VULNTRACK_BROWSER_TEST="1" if args.e2e else "0",
@@ -234,13 +257,14 @@ def main():
         # Do not inherit keys or broaden this explicitly configured test/development API.
         if args.e2e:
             env.pop("NVD_API_KEY", None)
-        api_log = open(Path(temp.name) / "api.log", "w+")
-        logs.append(api_log)
+        api_log = log_stack.enter_context(open(Path(temp.name) / "api.log", "w+"))  # noqa: SIM115 - closed by ExitStack in finally
         app_path = "tests.e2e.api_server:app" if args.e2e else "app.main:create_app"
         api_command = [sys.executable, "-m", "uvicorn", app_path]
         if not args.e2e:
             api_command.append("--factory")
         api_command += [
+            "--workers",
+            "1",
             "--host",
             "127.0.0.1",
             "--port",
@@ -275,14 +299,16 @@ def main():
             schema = json.load(response)
         assert "role" not in schema["components"]["schemas"]["UserRead"]["properties"]
         assert "/api/v1/cpe-candidates" in schema["paths"]
+        assert "/api/v1/assets/{asset_id}/analyses" in schema["paths"]
+        review_schema = schema["components"]["schemas"]["ReviewInput"]
+        assert "expected_updated_at" in review_schema["required"]
         if args.e2e:
             test_process = subprocess.Popen(
                 ["npm", "run", "test:e2e"], cwd=ROOT, env=env, start_new_session=True
             )
             processes.append(test_process)
             return test_process.wait()
-        web_log = open(Path(temp.name) / "web.log", "w+")
-        logs.append(web_log)
+        web_log = log_stack.enter_context(open(Path(temp.name) / "web.log", "w+"))  # noqa: SIM115 - closed by ExitStack in finally
         web_process = subprocess.Popen(
             ["npm", "run", "dev", "--", "--port", str(web_port)],
             cwd=ROOT,
@@ -308,9 +334,11 @@ def main():
         processes.append(web_process)
         wait_url(web_url, web_process)
         print(
-            f"VulnTrack listo: {web_url}\nFastAPI: {api_url}\nCuenta: {args.username}", flush=True
+            f"VulnTrack listo: {web_url}\nFastAPI: {api_url}\nCuenta: {args.username}",
+            flush=True,
         )
         print(
+            "Worker CVE habilitado dentro de FastAPI (una instancia).\n"
             "Solo datos temporales. Ctrl+C detiene estos servicios y descarta la base tmpfs.",
             flush=True,
         )
@@ -331,16 +359,17 @@ def main():
                 with suppress(ProcessLookupError):
                     os.killpg(process.pid, signal.SIGTERM)
                 try:
-                    process.wait(timeout=8)
+                    process.wait(timeout=50)
                 except subprocess.TimeoutExpired:
                     with suppress(ProcessLookupError):
                         os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
         if engine:
             engine.dispose()
-        for log in logs:
-            log.close()
-        subprocess.run(["docker", "stop", "--time", "10", name], capture_output=True, check=False)
+        log_stack.close()
+        subprocess.run(
+            ["docker", "stop", "--time", "10", name], capture_output=True, check=False
+        )
         temp.cleanup()
         print(
             "Servicios propios detenidos; datos tmpfs descartados. No se tocaron volúmenes ajenos.",
