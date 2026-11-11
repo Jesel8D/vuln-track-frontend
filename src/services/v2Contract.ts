@@ -2,6 +2,7 @@ import type {
   Application,
   ApplicationList,
   AnalysisAccepted,
+  AnalysisHistory,
   AnalysisRun,
   CpeCandidate,
   CpeCandidateList,
@@ -174,6 +175,27 @@ export function isAnalysisRun(value: unknown): value is AnalysisRun {
     timestamp(value.created_at) &&
     (value.started_at === null || timestamp(value.started_at)) &&
     (value.completed_at === null || timestamp(value.completed_at))
+  );
+}
+
+export function isAnalysisHistory(value: unknown): value is AnalysisHistory {
+  return (
+    record(value) &&
+    Array.isArray(value.items) &&
+    value.items.length <= 100 &&
+    value.items.every(
+      (item) =>
+        record(item) &&
+        typeof item.technology_id === "string" &&
+        uuid.test(item.technology_id) &&
+        bounded(item.product, 160) &&
+        bounded(item.version, 120) &&
+        isAnalysisRun(item),
+    ) &&
+    record(value.page) &&
+    nonnegativeInteger(value.page.limit) &&
+    nonnegativeInteger(value.page.offset) &&
+    nonnegativeInteger(value.page.total)
   );
 }
 
