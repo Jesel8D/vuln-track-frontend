@@ -15,6 +15,7 @@ import {
 import { useAuth } from "../features/auth/context";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
 import { V2CveAnalysis } from "../features/v2/V2CveAnalysis";
+import { ApplicationTargets } from "../features/v2/ApplicationTargets";
 import { errorText } from "../services/api";
 import type { CpeCandidate, Technology } from "../types/v2";
 
@@ -413,6 +414,11 @@ export function V2ApplicationPage() {
           <History size={16} /> Historial NVD
         </Link>
       </section>
+      <ApplicationTargets
+        workspaceId={current.workspace_id}
+        applicationId={application.id}
+        canWrite={canWrite}
+      />
       <section className="v2-detail-summary">
         <article>
           <span>TECNOLOGÍAS LISTADAS</span>
