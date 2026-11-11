@@ -534,6 +534,29 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.v2-application-targets-cell {
+  display: grid;
+  justify-items: start;
+  gap: 7px;
+  min-width: 190px;
+}
+.v2-application-targets-cell > div {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+.v2-application-targets-cell a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 280px;
+  overflow-wrap: anywhere;
+  color: #536a89;
+}
+.v2-application-targets-cell small {
+  color: #748198;
+  font-size: 10px;
+}
 .v2-status {
   display: inline-flex;
   padding: 5px 8px;
