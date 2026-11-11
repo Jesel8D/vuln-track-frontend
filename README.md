@@ -1,5 +1,14 @@
 # VulnTrack · Web MVP-B
 
+## Estado de la rama `rudi`
+
+La interfaz principal en esta rama se está migrando a Database V2: workspaces,
+aplicaciones web y tecnologías. El Dashboard y el inventario ya consumen las
+rutas `/api/v2` del backend. La guía del alcance actual está en
+[`docs/V2_WORKSPACE_UI.md`](docs/V2_WORKSPACE_UI.md). El resto de este README
+describe el MVP-B de activos/dispositivos como antecedente; no es el contrato de
+la interfaz V2.
+
 Aplicación React conectada a FastAPI: login → inventario → CPE confirmado →
 consulta NVD → CVE/evidencia → revisión humana → historial. Los estados y
 resultados provienen del backend real; la correlación no confirma vulnerabilidad.
