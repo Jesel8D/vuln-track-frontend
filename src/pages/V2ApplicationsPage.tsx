@@ -1,10 +1,18 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { AppWindow, CircleAlert, Plus, Search, X } from "lucide-react";
+import {
+  AppWindow,
+  CircleAlert,
+  ExternalLink,
+  Plus,
+  Search,
+  X,
+} from "lucide-react";
 import { useAuth } from "../features/auth/context";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
 import { errorText } from "../services/api";
+import type { WorkspaceTarget } from "../types/v2";
 
 export function V2ApplicationsPage() {
   const { api, user } = useAuth();
@@ -21,6 +29,22 @@ export function V2ApplicationsPage() {
     queryFn: ({ signal }) => api.applications(current!.workspace_id, signal),
     enabled: Boolean(current),
   });
+  const targetsQuery = useQuery({
+    queryKey: ["v2", user?.id, current?.workspace_id, "targets"],
+    queryFn: ({ signal }) =>
+      api.v2WorkspaceTargets(current!.workspace_id, signal),
+    enabled: Boolean(current),
+  });
+  const targetItems = targetsQuery.data?.items;
+  const targetsByApplication = useMemo(() => {
+    const grouped = new Map<string, WorkspaceTarget[]>();
+    for (const target of targetItems ?? []) {
+      const items = grouped.get(target.application_id) ?? [];
+      items.push(target);
+      grouped.set(target.application_id, items);
+    }
+    return grouped;
+  }, [targetItems]);
   const create = useMutation({
     mutationFn: () =>
       api.createApplication(current!.workspace_id, {
@@ -41,11 +65,11 @@ export function V2ApplicationsPage() {
   const applications = useMemo(
     () =>
       (query.data?.items ?? []).filter((application) =>
-        `${application.name} ${application.description ?? ""}`
+        `${application.name} ${application.description ?? ""} ${(targetsByApplication.get(application.id) ?? []).map((target) => target.url).join(" ")}`
           .toLocaleLowerCase()
           .includes(search.toLocaleLowerCase()),
       ),
-    [query.data?.items, search],
+    [query.data?.items, search, targetsByApplication],
   );
 
   if (!current)
@@ -130,6 +154,20 @@ export function V2ApplicationsPage() {
             {message}
           </p>
         )}
+        {targetsQuery.isError && (
+          <div className="v2-error-inline" role="alert">
+            <span>
+              No se pudieron cargar las URLs registradas.{" "}
+              {errorText(targetsQuery.error)}
+            </span>
+            <button
+              className="v2-text-button"
+              onClick={() => void targetsQuery.refetch()}
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
         {query.isPending ? (
           <div className="v2-loading" role="status">
             Cargando aplicaciones…
@@ -154,8 +192,10 @@ export function V2ApplicationsPage() {
               <thead>
                 <tr>
                   <th>NOMBRE</th>
+                  <th>URL / DESTINOS</th>
                   <th>DESCRIPCIÓN</th>
                   <th>ESTADO</th>
+                  <th>AUTORIZACIÓN</th>
                   <th>ÚLTIMA ACTUALIZACIÓN</th>
                 </tr>
               </thead>
@@ -172,6 +212,54 @@ export function V2ApplicationsPage() {
                       <small className="v2-mono">{application.id}</small>
                     </td>
                     <td>
+                      {targetsQuery.isPending ? (
+                        <span className="v2-muted">Cargando URLs…</span>
+                      ) : targetsQuery.isError ? (
+                        <span className="v2-muted">No disponible</span>
+                      ) : (targetsByApplication.get(application.id) ?? [])
+                          .length ? (
+                        <div className="v2-application-targets-cell">
+                          {(targetsByApplication.get(application.id) ?? [])
+                            .slice(0, 2)
+                            .map((target) => (
+                              <div key={target.id}>
+                                <a
+                                  href={target.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {target.label || target.url}{" "}
+                                  <ExternalLink size={12} />
+                                </a>
+                                <span
+                                  className={`v2-status v2-status-${target.authorization_status}`}
+                                >
+                                  {target.authorization_status === "approved"
+                                    ? "Autorizada"
+                                    : target.authorization_status === "rejected"
+                                      ? "Rechazada"
+                                      : target.authorization_status ===
+                                          "expired"
+                                        ? "Vencida"
+                                        : "Pendiente"}
+                                </span>
+                              </div>
+                            ))}
+                          {(targetsByApplication.get(application.id) ?? [])
+                            .length > 2 && (
+                            <small>
+                              +
+                              {(targetsByApplication.get(application.id) ?? [])
+                                .length - 2}{" "}
+                              destinos
+                            </small>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="v2-muted">Sin URL registrada</span>
+                      )}
+                    </td>
+                    <td>
                       {application.description || (
                         <span className="v2-muted">Sin descripción</span>
                       )}
@@ -184,6 +272,14 @@ export function V2ApplicationsPage() {
                           ? "Activa"
                           : "Archivada"}
                       </span>
+                    </td>
+                    <td>
+                      {targetsQuery.isError
+                        ? "No disponible"
+                        : (targetsByApplication.get(application.id) ?? [])
+                              .length
+                          ? `${(targetsByApplication.get(application.id) ?? []).filter((target) => target.authorization_status === "approved").length} de ${(targetsByApplication.get(application.id) ?? []).length} autorizadas`
+                          : "Sin destinos"}
                     </td>
                     <td>
                       {new Date(application.updated_at).toLocaleDateString(
