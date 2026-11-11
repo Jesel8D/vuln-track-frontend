@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ChevronRight,
@@ -12,7 +12,11 @@ import {
 import { ApiError, errorText } from "../../services/api";
 import { useAuth } from "../auth/context";
 import { v2AnalysisIntents } from "./analysisIntents";
-import type { AnalysisAccepted, NvdFinding } from "../../types/v2";
+import type {
+  AnalysisAccepted,
+  NvdApplicability,
+  NvdFinding,
+} from "../../types/v2";
 
 const warningLabels: Record<string, string> = {
   EVIDENCE_BUDGET_REACHED:
@@ -61,7 +65,19 @@ function safeReference(value: unknown): string | null {
   }
 }
 
-function FindingCard({ finding }: { finding: NvdFinding }) {
+function FindingCard({
+  finding,
+  canReview,
+  isReviewing,
+  onReview,
+}: {
+  finding: NvdFinding;
+  canReview: boolean;
+  isReviewing: boolean;
+  onReview: (applicability: NvdApplicability) => void;
+}) {
+  const [reviewApplicability, setReviewApplicability] =
+    useState<NvdApplicability>(finding.applicability);
   const evidence = finding.evidence;
   const descriptions = Array.isArray(evidence.descriptions)
     ? evidence.descriptions
@@ -105,12 +121,48 @@ function FindingCard({ finding }: { finding: NvdFinding }) {
       <h4>{finding.title || "Registro CVE sin descripción breve"}</h4>
       <p className="v2-applicability-label">
         <AlertTriangle size={14} />
-        {finding.applicability === "potential"
-          ? "Potencialmente aplicable · requiere revisión humana"
-          : finding.applicability === "not_applicable"
-            ? "Marcado como no aplicable"
-            : "Aplicabilidad indeterminada · evidencia insuficiente"}
+        {finding.status === "reviewed"
+          ? finding.applicability === "potential"
+            ? "Revisión manual: se conserva como potencial"
+            : finding.applicability === "not_applicable"
+              ? "Revisión manual: marcado como no aplicable"
+              : "Revisión manual: aplicabilidad indeterminada"
+          : finding.applicability === "potential"
+            ? "Potencialmente aplicable · requiere revisión humana"
+            : finding.applicability === "not_applicable"
+              ? "Marcado como no aplicable"
+              : "Aplicabilidad indeterminada · evidencia insuficiente"}
       </p>
+      {canReview && finding.status === "open" && (
+        <div className="v2-finding-review">
+          <label>
+            Resultado de la revisión
+            <select
+              value={reviewApplicability}
+              onChange={(event) =>
+                setReviewApplicability(event.target.value as NvdApplicability)
+              }
+              disabled={isReviewing}
+            >
+              <option value="potential">Potencialmente aplicable</option>
+              <option value="undetermined">No se pudo determinar</option>
+              <option value="not_applicable">No aplicable</option>
+            </select>
+          </label>
+          <button
+            className="v2-secondary-button"
+            disabled={isReviewing}
+            onClick={() => onReview(reviewApplicability)}
+          >
+            {isReviewing ? "Guardando…" : "Guardar revisión"}
+          </button>
+        </div>
+      )}
+      {finding.status === "reviewed" && (
+        <p className="v2-review-saved" role="status">
+          Revisión guardada por el equipo.
+        </p>
+      )}
       <p className="v2-finding-description">
         {typeof englishDescription === "string"
           ? englishDescription
@@ -220,6 +272,7 @@ export function V2CveAnalysis({
   activeApplication: boolean;
 }) {
   const { api, user } = useAuth();
+  const cache = useQueryClient();
   const scope = [user?.id, workspaceId, applicationId, technologyId].join(":");
   const cachedIntent = v2AnalysisIntents.get(scope);
   const [runId, setRunId] = useState<string | null>(cachedIntent.runId);
@@ -277,6 +330,38 @@ export function V2CveAnalysis({
     enabled: Boolean(
       runId && run.data && ["completed", "failed"].includes(run.data.status),
     ),
+  });
+  const review = useMutation({
+    mutationFn: ({
+      finding,
+      applicability,
+    }: {
+      finding: NvdFinding;
+      applicability: NvdApplicability;
+    }) =>
+      api.reviewV2Finding(
+        workspaceId,
+        applicationId,
+        finding.id,
+        applicability,
+        finding.updated_at,
+      ),
+    onSuccess: async () => {
+      setNotice(
+        "Revisión guardada y registrada en la auditoría del workspace.",
+      );
+      await cache.invalidateQueries({
+        queryKey: [
+          "v2",
+          user?.id,
+          workspaceId,
+          applicationId,
+          runId,
+          "findings",
+        ],
+      });
+    },
+    onError: (error) => setNotice(errorText(error)),
   });
 
   const requestAnalysis = () => {
@@ -454,7 +539,18 @@ export function V2CveAnalysis({
           {findings.data.items.length ? (
             <div className="v2-findings-list">
               {findings.data.items.map((finding) => (
-                <FindingCard key={finding.id} finding={finding} />
+                <FindingCard
+                  key={finding.id}
+                  finding={finding}
+                  canReview={canWrite && activeApplication}
+                  isReviewing={
+                    review.isPending &&
+                    review.variables?.finding.id === finding.id
+                  }
+                  onReview={(applicability) =>
+                    review.mutate({ finding, applicability })
+                  }
+                />
               ))}
             </div>
           ) : (
