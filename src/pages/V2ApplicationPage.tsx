@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../features/auth/context";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
+import { V2CveAnalysis } from "../features/v2/V2CveAnalysis";
 import { errorText } from "../services/api";
 import type { CpeCandidate, Technology } from "../types/v2";
 
@@ -282,6 +283,15 @@ function TechnologyCard({
         Un CPE identifica producto y versión. Los CVE asociados son potenciales
         hasta su evaluación.
       </p>
+      <V2CveAnalysis
+        workspaceId={workspaceId}
+        applicationId={applicationId}
+        technologyId={technology.id}
+        selectedCpe={technology.selected_cpe}
+        confirmed={isConfirmed}
+        canWrite={canWrite}
+        activeApplication={activeApplication}
+      />
     </article>
   );
 }
@@ -481,7 +491,7 @@ export function V2ApplicationPage() {
           <div className="v2-technology-list">
             {technologies.data.items.map((technology) => (
               <TechnologyCard
-                key={technology.id}
+                key={`${user?.id}:${current.workspace_id}:${application.id}:${technology.id}`}
                 workspaceId={current.workspace_id}
                 applicationId={application.id}
                 technology={technology}
