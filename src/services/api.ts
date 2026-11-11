@@ -21,6 +21,7 @@ import type {
 import {
   isApplicationList,
   isAnalysisAccepted,
+  isAnalysisHistory,
   isAnalysisRun,
   isCpeCandidate,
   isCpeCandidateList,
@@ -455,6 +456,23 @@ export class ApiClient {
     return this.checked(
       `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/analyses/${encodeURIComponent(runId)}`,
       isAnalysisRun,
+      { signal },
+    );
+  }
+  v2AnalysisHistory(
+    workspaceId: string,
+    applicationId: string,
+    limit = 20,
+    offset = 0,
+    signal?: AbortSignal,
+  ) {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+    });
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/analyses?${params}`,
+      isAnalysisHistory,
       { signal },
     );
   }
