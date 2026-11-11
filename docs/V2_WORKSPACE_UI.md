@@ -10,6 +10,9 @@ directamente con PostgreSQL ni con NVD.
 - Crear el primer workspace con una clave de idempotencia UUID.
 - Consultar y buscar las aplicaciones del workspace.
 - Registrar aplicaciones con nombre y descripción.
+- Registrar URLs de aplicación con etiqueta opcional y estado de autorización;
+  solo owner/editor puede guardar una declaración de autorización con vigencia.
+  Registrar o autorizar una URL no inicia análisis.
 - Dashboard con aplicaciones y una muestra reciente de tecnologías y CPE
   confirmados. Los conteos de tecnologías/CPE indican su muestra y no se
   presentan como agregados globales.
@@ -34,6 +37,8 @@ directamente con PostgreSQL ni con NVD.
 - `GET /api/v2/workspaces/{workspace_id}/applications`
 - `POST /api/v2/workspaces/{workspace_id}/applications`
 - `GET /api/v2/workspaces/{workspace_id}/applications/{application_id}/technologies`
+- `GET/POST /api/v2/workspaces/{workspace_id}/applications/{application_id}/targets`
+- `PATCH /api/v2/workspaces/{workspace_id}/applications/{application_id}/targets/{target_id}/authorization`
 - `POST /api/v2/workspaces/{workspace_id}/applications/{application_id}/technologies`
 - `GET /api/v2/workspaces/{workspace_id}/applications/{application_id}/cpe-candidates`
 - `PUT /api/v2/workspaces/{workspace_id}/applications/{application_id}/technologies/{technology_id}/cpe`
