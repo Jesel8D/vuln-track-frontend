@@ -14,6 +14,7 @@ import type {
   WorkspaceCreated,
   WorkspaceList,
   WorkspaceTargetList,
+  V2Dashboard,
   V2AnalysisStatus,
   V2Coverage,
 } from "../types/v2";
@@ -136,6 +137,102 @@ export function isWorkspaceTargetList(
     nonnegativeInteger(value.page.limit) &&
     nonnegativeInteger(value.page.offset) &&
     nonnegativeInteger(value.page.total)
+  );
+}
+
+export function isV2Dashboard(value: unknown): value is V2Dashboard {
+  const countFields = [
+    "applications_total",
+    "targets_total",
+    "authorized_targets_total",
+    "technologies_total",
+    "confirmed_cpe_total",
+    "analyses_total",
+    "analyses_in_progress",
+    "analyses_failed",
+    "findings_total",
+    "findings_open",
+    "critical_open",
+    "high_open",
+    "medium_open",
+    "low_open",
+    "severity_unknown",
+    "technologies_with_completed_analysis",
+  ];
+  const validSummary = (summary: unknown) =>
+    record(summary) &&
+    countFields.every((field) => nonnegativeInteger(summary[field]));
+  return (
+    record(value) &&
+    validSummary(value.summary) &&
+    Array.isArray(value.recent_analyses) &&
+    value.recent_analyses.length <= 5 &&
+    value.recent_analyses.every(
+      (item) =>
+        record(item) &&
+        typeof item.id === "string" &&
+        uuid.test(item.id) &&
+        typeof item.application_id === "string" &&
+        uuid.test(item.application_id) &&
+        bounded(item.application_name, 160) &&
+        typeof item.technology_id === "string" &&
+        uuid.test(item.technology_id) &&
+        bounded(item.product, 160) &&
+        bounded(item.version, 120) &&
+        isAnalysisStatus(item.status) &&
+        isCoverage(item.coverage) &&
+        nonnegativeInteger(item.stored_count) &&
+        nonnegativeInteger(item.finding_count) &&
+        Array.isArray(item.warning_codes) &&
+        item.warning_codes.length <= 20 &&
+        item.warning_codes.every(
+          (warning) =>
+            typeof warning === "string" && /^[A-Z0-9_]{1,80}$/.test(warning),
+        ) &&
+        timestamp(item.created_at) &&
+        (item.completed_at === null || timestamp(item.completed_at)),
+    ) &&
+    Array.isArray(value.priority_findings) &&
+    value.priority_findings.length <= 5 &&
+    value.priority_findings.every(
+      (item) =>
+        record(item) &&
+        typeof item.id === "string" &&
+        uuid.test(item.id) &&
+        typeof item.external_id === "string" &&
+        /^CVE-[0-9]{4}-[0-9]{4,}$/.test(item.external_id) &&
+        (item.title === null ||
+          (typeof item.title === "string" && item.title.length <= 500)) &&
+        (
+          [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "none",
+            "unknown",
+            null,
+          ] as unknown[]
+        ).includes(item.severity) &&
+        ["potential", "undetermined", "not_applicable"].includes(
+          String(item.applicability),
+        ) &&
+        item.status === "open" &&
+        timestamp(item.observed_at) &&
+        typeof item.application_id === "string" &&
+        uuid.test(item.application_id) &&
+        bounded(item.application_name, 160) &&
+        bounded(item.product, 160) &&
+        bounded(item.version, 120),
+    ) &&
+    Array.isArray(value.analysis_trend) &&
+    value.analysis_trend.length === 6 &&
+    value.analysis_trend.every(
+      (item) =>
+        record(item) &&
+        timestamp(item.month) &&
+        nonnegativeInteger(item.analyses),
+    )
   );
 }
 
