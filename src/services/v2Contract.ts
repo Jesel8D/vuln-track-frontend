@@ -8,6 +8,7 @@ import type {
   CpeCandidateList,
   NvdFinding,
   NvdFindingList,
+  RecommendationList,
   TechnologyList,
   WorkspaceCreated,
   WorkspaceList,
@@ -246,5 +247,42 @@ export function isNvdFindingList(value: unknown): value is NvdFindingList {
     nonnegativeInteger(value.page.total) &&
     isAnalysisStatus(value.run_status) &&
     isCoverage(value.coverage)
+  );
+}
+
+const recommendationStatuses = [
+  "pending",
+  "in_progress",
+  "fixed",
+  "accepted_risk",
+];
+
+export function isRecommendationList(
+  value: unknown,
+): value is RecommendationList {
+  return (
+    record(value) &&
+    Array.isArray(value.items) &&
+    value.items.length <= 100 &&
+    value.items.every(
+      (item) =>
+        record(item) &&
+        typeof item.id === "string" &&
+        uuid.test(item.id) &&
+        typeof item.finding_id === "string" &&
+        uuid.test(item.finding_id) &&
+        bounded(item.recommendation, 4000) &&
+        (item.source_url === null || bounded(item.source_url, 2048)) &&
+        recommendationStatuses.includes(String(item.status)) &&
+        (item.assigned_to === null ||
+          (typeof item.assigned_to === "string" &&
+            uuid.test(item.assigned_to))) &&
+        typeof item.created_by === "string" &&
+        uuid.test(item.created_by) &&
+        (item.due_at === null || timestamp(item.due_at)) &&
+        (item.completed_at === null || timestamp(item.completed_at)) &&
+        timestamp(item.created_at) &&
+        timestamp(item.updated_at),
+    )
   );
 }
