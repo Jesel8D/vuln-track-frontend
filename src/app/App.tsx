@@ -10,6 +10,7 @@ import { V2DashboardPage } from "../pages/V2DashboardPage";
 import { V2ApplicationsPage } from "../pages/V2ApplicationsPage";
 import { V2ApplicationPage } from "../pages/V2ApplicationPage";
 import { V2AnalysisHistoryPage } from "../pages/V2AnalysisHistoryPage";
+import { V2SecurityAnalysisPage } from "../pages/V2SecurityAnalysisPage";
 function Protected() {
   const { user } = useAuth();
   const location = useLocation();
@@ -31,6 +32,7 @@ export function App() {
         <Route element={<V2Layout />}>
           <Route index element={<V2DashboardPage />} />
           <Route path="aplicaciones" element={<V2ApplicationsPage />} />
+          <Route path="analisis" element={<V2SecurityAnalysisPage />} />
           <Route
             path="aplicaciones/:applicationId"
             element={<V2ApplicationPage />}
