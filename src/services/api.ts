@@ -27,6 +27,7 @@ import {
   isCpeCandidateList,
   isNvdFindingList,
   isNvdFinding,
+  isRecommendationList,
   isTechnologyList,
   isWorkspaceCreated,
   isWorkspaceList,
@@ -83,6 +84,8 @@ const messages: Record<string, string> = {
     "Ya hay una consulta activa para esta tecnología. Espera antes de iniciar otra.",
   FINDING_REVIEW_CONFLICT:
     "El hallazgo ya fue revisado o cambió. Actualiza la lista antes de continuar.",
+  RECOMMENDATION_CONFLICT:
+    "La medida cambió. Actualiza la lista antes de cambiar su estado.",
   ANALYSIS_NOT_FOUND: "No encontramos esta consulta dentro de la aplicación.",
   CPE_SELECTION_CHANGED:
     "La selección CPE cambió. Actualiza la tecnología antes de confirmarla.",
@@ -506,6 +509,53 @@ export class ApiClient {
       {
         method: "PATCH",
         body: { applicability, expected_updated_at: expectedUpdatedAt },
+      },
+    );
+  }
+  v2Recommendations(
+    workspaceId: string,
+    applicationId: string,
+    findingId: string,
+    signal?: AbortSignal,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/findings/${encodeURIComponent(findingId)}/recommendations`,
+      isRecommendationList,
+      { signal },
+    );
+  }
+  createV2Recommendation(
+    workspaceId: string,
+    applicationId: string,
+    findingId: string,
+    body: {
+      recommendation: string;
+      source_url: string | null;
+      assigned_to?: string | null;
+      due_at?: string | null;
+    },
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/findings/${encodeURIComponent(findingId)}/recommendations`,
+      (value): value is import("../types/v2").Recommendation =>
+        isRecommendationList({ items: [value] }),
+      { method: "POST", body },
+    );
+  }
+  updateV2Recommendation(
+    workspaceId: string,
+    applicationId: string,
+    recommendationId: string,
+    status: import("../types/v2").RecommendationStatus,
+    expectedUpdatedAt: string,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/recommendations/${encodeURIComponent(recommendationId)}`,
+      (value): value is import("../types/v2").Recommendation =>
+        isRecommendationList({ items: [value] }),
+      {
+        method: "PATCH",
+        body: { status, expected_updated_at: expectedUpdatedAt },
       },
     );
   }
