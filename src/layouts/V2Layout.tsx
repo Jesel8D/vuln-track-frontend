@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
-import { Boxes, History, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
+import {
+  Boxes,
+  History,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  ScanLine,
+  X,
+} from "lucide-react";
 import { Brand } from "../components/ui";
 import { useAuth } from "../features/auth/context";
 import {
@@ -11,6 +19,12 @@ import {
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/aplicaciones", label: "Aplicaciones", icon: Boxes, end: false },
+  {
+    to: "/analisis",
+    label: "Análisis de seguridad",
+    icon: ScanLine,
+    end: false,
+  },
   { to: "/historial", label: "Historial", icon: History, end: false },
 ];
 
