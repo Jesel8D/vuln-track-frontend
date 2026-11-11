@@ -66,3 +66,50 @@ export interface CpeCandidateList {
   page: { limit: number; offset: number; total: number };
   source_timestamp: string;
 }
+
+export type V2AnalysisStatus = "queued" | "running" | "completed" | "failed";
+export type V2Coverage = "complete" | "partial" | null;
+
+export interface AnalysisAccepted {
+  id: string;
+  status?: V2AnalysisStatus;
+  coverage?: V2Coverage;
+  total_results?: number | null;
+  stored_count?: number;
+}
+
+export interface AnalysisRun extends AnalysisAccepted {
+  status: V2AnalysisStatus;
+  coverage: V2Coverage;
+  total_results: number | null;
+  retrieved_count: number;
+  stored_count: number;
+  page_count: number;
+  warning_codes: string[];
+  failure_code: string | null;
+  source_timestamp: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface NvdFinding {
+  id: string;
+  external_id: string;
+  title: string | null;
+  severity: "critical" | "high" | "medium" | "low" | "none" | "unknown" | null;
+  cvss: Record<string, unknown> | null;
+  applicability: "potential" | "undetermined" | "not_applicable";
+  status: "open" | "reviewed" | "resolved" | "accepted_risk";
+  evidence: Record<string, unknown>;
+  published_at: string;
+  last_modified_at: string;
+  observed_at: string;
+}
+
+export interface NvdFindingList {
+  items: NvdFinding[];
+  page: { limit: number; offset: number; total: number };
+  run_status: V2AnalysisStatus;
+  coverage: V2Coverage;
+}
