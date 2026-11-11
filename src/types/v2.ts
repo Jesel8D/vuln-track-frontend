@@ -93,6 +93,17 @@ export interface AnalysisRun extends AnalysisAccepted {
   completed_at: string | null;
 }
 
+export interface AnalysisHistoryItem extends AnalysisRun {
+  technology_id: string;
+  product: string;
+  version: string;
+}
+
+export interface AnalysisHistory {
+  items: AnalysisHistoryItem[];
+  page: { limit: number; offset: number; total: number };
+}
+
 export interface NvdFinding {
   id: string;
   external_id: string;
