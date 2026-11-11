@@ -12,6 +12,7 @@ import {
 import { ApiError, errorText } from "../../services/api";
 import { useAuth } from "../auth/context";
 import { v2AnalysisIntents } from "./analysisIntents";
+import { FindingRecommendations } from "./FindingRecommendations";
 import type {
   AnalysisAccepted,
   NvdApplicability,
@@ -70,11 +71,15 @@ function FindingCard({
   canReview,
   isReviewing,
   onReview,
+  workspaceId,
+  applicationId,
 }: {
   finding: NvdFinding;
   canReview: boolean;
   isReviewing: boolean;
   onReview: (applicability: NvdApplicability) => void;
+  workspaceId: string;
+  applicationId: string;
 }) {
   const [reviewApplicability, setReviewApplicability] =
     useState<NvdApplicability>(finding.applicability);
@@ -250,6 +255,12 @@ function FindingCard({
           )}
         </div>
       </details>
+      <FindingRecommendations
+        workspaceId={workspaceId}
+        applicationId={applicationId}
+        findingId={finding.id}
+        canWrite={canReview}
+      />
     </article>
   );
 }
@@ -543,6 +554,8 @@ export function V2CveAnalysis({
                   key={finding.id}
                   finding={finding}
                   canReview={canWrite && activeApplication}
+                  workspaceId={workspaceId}
+                  applicationId={applicationId}
                   isReviewing={
                     review.isPending &&
                     review.variables?.finding.id === finding.id
