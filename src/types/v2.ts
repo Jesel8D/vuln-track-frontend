@@ -168,6 +168,56 @@ export interface WorkspaceTargetList {
   page: { limit: number; offset: number; total: number };
 }
 
+export interface V2Dashboard {
+  summary: {
+    applications_total: number;
+    targets_total: number;
+    authorized_targets_total: number;
+    technologies_total: number;
+    confirmed_cpe_total: number;
+    analyses_total: number;
+    analyses_in_progress: number;
+    analyses_failed: number;
+    findings_total: number;
+    findings_open: number;
+    critical_open: number;
+    high_open: number;
+    medium_open: number;
+    low_open: number;
+    severity_unknown: number;
+    technologies_with_completed_analysis: number;
+  };
+  recent_analyses: Array<{
+    id: string;
+    application_id: string;
+    application_name: string;
+    technology_id: string;
+    product: string;
+    version: string;
+    status: V2AnalysisStatus;
+    coverage: V2Coverage;
+    stored_count: number;
+    warning_codes: string[];
+    created_at: string;
+    completed_at: string | null;
+    finding_count: number;
+  }>;
+  priority_findings: Array<{
+    id: string;
+    external_id: string;
+    title: string | null;
+    severity: NvdFinding["severity"];
+    applicability: NvdApplicability;
+    status: "open";
+    observed_at: string;
+    application_id: string;
+    application_name: string;
+    product: string;
+    version: string;
+  }>;
+  analysis_trend: Array<{ month: string; analyses: number }>;
+}
+
 export interface NvdFindingList {
   items: NvdFinding[];
   page: { limit: number; offset: number; total: number };
