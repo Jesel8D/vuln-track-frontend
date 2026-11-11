@@ -1,4 +1,5 @@
 import { analysisIntents } from "../analyses/intents";
+import { v2AnalysisIntents } from "../v2/analysisIntents";
 import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (expired: boolean) => {
       memory.invalidate();
       analysisIntents.clear();
+      v2AnalysisIntents.clearAll();
       api.abortAll();
       cache.clear();
       setUser(null);
