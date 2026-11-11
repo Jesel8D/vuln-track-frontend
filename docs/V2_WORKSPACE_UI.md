@@ -18,6 +18,11 @@ directamente con PostgreSQL ni con NVD.
 - Dashboard con aplicaciones y una muestra reciente de tecnologías y CPE
   confirmados. Los conteos de tecnologías/CPE indican su muestra y no se
   presentan como agregados globales.
+- Dashboard de workspace con agregados completos de aplicaciones, destinos,
+  consultas NVD y hallazgos. Los hallazgos se calculan desde el análisis
+  completado más reciente de cada tecnología y cada CVE cuenta una vez por
+  tecnología; una CVE presente en tecnologías distintas puede aparecer en cada
+  una. Las ejecuciones en curso y fallidas se muestran por separado.
 - Detalle de aplicación con alta de tecnologías, búsqueda CPE bajo demanda y
   selección/confirmación explícita; la API compara la versión observada.
 - Consulta CVE explícita e idempotente por tecnología confirmada, presentación
@@ -35,6 +40,7 @@ directamente con PostgreSQL ni con NVD.
 
 ## Rutas y datos
 
+- `GET /api/v2/workspaces/{workspace_id}/dashboard`
 - `GET /api/v2/workspaces` y `POST /api/v2/workspaces`
 - `GET /api/v2/workspaces/{workspace_id}/applications`
 - `POST /api/v2/workspaces/{workspace_id}/applications`
