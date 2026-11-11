@@ -20,8 +20,11 @@ import type {
 } from "../types/api";
 import {
   isApplicationList,
+  isAnalysisAccepted,
+  isAnalysisRun,
   isCpeCandidate,
   isCpeCandidateList,
+  isNvdFindingList,
   isTechnologyList,
   isWorkspaceCreated,
   isWorkspaceList,
@@ -62,6 +65,10 @@ const messages: Record<string, string> = {
     "NVD no está disponible temporalmente. Tu activo sigue guardado.",
   NVD_RATE_LIMIT:
     "La cuota de consulta está ocupada. Espera antes de consultar otra vez.",
+  NVD_THROTTLED:
+    "NVD está aplicando una pausa entre consultas. Espera antes de volver a intentarlo.",
+  NVD_PROCESSING_FAILED:
+    "No se pudo procesar la consulta NVD. Reintenta el mismo intento para recuperar su estado.",
   CPE_RATE_LIMIT:
     "Alcanzaste el límite temporal de consultas. Espera antes de continuar.",
   IDENTIFICATION_REQUIRED:
@@ -71,7 +78,8 @@ const messages: Record<string, string> = {
   IDENTIFICATION_INCOMPLETE:
     "El CPE no permite una consulta específica. Revisa el componente y la versión.",
   ANALYSIS_IN_PROGRESS:
-    "Ya hay una consulta en curso para este activo. Abre su historial.",
+    "Ya hay una consulta activa para esta tecnología. Espera antes de iniciar otra.",
+  ANALYSIS_NOT_FOUND: "No encontramos esta consulta dentro de la aplicación.",
   CPE_SELECTION_CHANGED:
     "La selección CPE cambió. Actualiza la tecnología antes de confirmarla.",
   CPE_CONFIRMATION_REQUIRED:
@@ -424,6 +432,44 @@ export class ApiClient {
           expected_selected_cpe: expectedSelectedCpe,
         },
       },
+    );
+  }
+  startV2Analysis(
+    workspaceId: string,
+    applicationId: string,
+    technologyId: string,
+    key: string,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/technologies/${encodeURIComponent(technologyId)}/analyses`,
+      isAnalysisAccepted,
+      { method: "POST", key },
+    );
+  }
+  v2Analysis(
+    workspaceId: string,
+    applicationId: string,
+    runId: string,
+    signal?: AbortSignal,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/analyses/${encodeURIComponent(runId)}`,
+      isAnalysisRun,
+      { signal },
+    );
+  }
+  v2Findings(
+    workspaceId: string,
+    applicationId: string,
+    runId: string,
+    offset = 0,
+    signal?: AbortSignal,
+  ) {
+    const params = new URLSearchParams({ limit: "20", offset: String(offset) });
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/analyses/${encodeURIComponent(runId)}/findings?${params}`,
+      isNvdFindingList,
+      { signal },
     );
   }
 }
