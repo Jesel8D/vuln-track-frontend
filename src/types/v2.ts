@@ -121,6 +121,27 @@ export interface NvdFinding {
 
 export type NvdApplicability = "potential" | "undetermined" | "not_applicable";
 
+export type RecommendationStatus =
+  "pending" | "in_progress" | "fixed" | "accepted_risk";
+
+export interface Recommendation {
+  id: string;
+  finding_id: string;
+  recommendation: string;
+  source_url: string | null;
+  status: RecommendationStatus;
+  assigned_to: string | null;
+  created_by: string;
+  due_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RecommendationList {
+  items: Recommendation[];
+}
+
 export interface NvdFindingList {
   items: NvdFinding[];
   page: { limit: number; offset: number; total: number };
