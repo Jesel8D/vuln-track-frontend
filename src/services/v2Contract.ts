@@ -1,6 +1,8 @@
 import type {
   Application,
   ApplicationList,
+  CpeCandidate,
+  CpeCandidateList,
   TechnologyList,
   WorkspaceCreated,
   WorkspaceList,
@@ -88,5 +90,33 @@ export function isTechnologyList(value: unknown): value is TechnologyList {
         ) &&
         timestamp(technology.observed_at),
     )
+  );
+}
+
+export function isCpeCandidate(value: unknown): value is CpeCandidate {
+  return (
+    record(value) &&
+    typeof value.cpe_name_id === "string" &&
+    uuid.test(value.cpe_name_id) &&
+    bounded(value.cpe_name, 1024) &&
+    (value.title === null || typeof value.title === "string") &&
+    typeof value.deprecated === "boolean"
+  );
+}
+
+export function isCpeCandidateList(value: unknown): value is CpeCandidateList {
+  return (
+    record(value) &&
+    Array.isArray(value.items) &&
+    value.items.length <= 20 &&
+    value.items.every(isCpeCandidate) &&
+    record(value.page) &&
+    typeof value.page.limit === "number" &&
+    Number.isInteger(value.page.limit) &&
+    typeof value.page.offset === "number" &&
+    Number.isInteger(value.page.offset) &&
+    typeof value.page.total === "number" &&
+    Number.isInteger(value.page.total) &&
+    timestamp(value.source_timestamp)
   );
 }

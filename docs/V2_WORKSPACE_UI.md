@@ -13,9 +13,11 @@ directamente con PostgreSQL ni con NVD.
 - Dashboard con aplicaciones y una muestra reciente de tecnologías y CPE
   confirmados. Los conteos de tecnologías/CPE indican su muestra y no se
   presentan como agregados globales.
+- Detalle de aplicación con alta de tecnologías, búsqueda CPE bajo demanda y
+  selección/confirmación explícita; la API compara la versión observada.
 - Mostrar el estado de ZAP como pendiente; no se simulan ejecuciones ni métricas.
-- La interfaz oculta acciones de escritura para membresías `viewer`; el backend
-  sigue siendo quien autoriza cada operación.
+- La interfaz permite consultas CPE a `viewer`, pero oculta las acciones de
+  escritura y confirmación; el backend sigue siendo quien autoriza cada operación.
 
 ## Rutas y datos
 
@@ -23,16 +25,20 @@ directamente con PostgreSQL ni con NVD.
 - `GET /api/v2/workspaces/{workspace_id}/applications`
 - `POST /api/v2/workspaces/{workspace_id}/applications`
 - `GET /api/v2/workspaces/{workspace_id}/applications/{application_id}/technologies`
+- `POST /api/v2/workspaces/{workspace_id}/applications/{application_id}/technologies`
+- `GET /api/v2/workspaces/{workspace_id}/applications/{application_id}/cpe-candidates`
+- `PUT /api/v2/workspaces/{workspace_id}/applications/{application_id}/technologies/{technology_id}/cpe`
 
 La API limita las listas de aplicaciones y tecnologías a 100 registros. El
 Dashboard consulta tecnologías solo para las cinco aplicaciones más recientes;
 por eso sus cifras están rotuladas como muestra. Database V2 no guarda todavía
 una URL de aplicación, de modo que esta vista no inventa ni solicita ese campo.
 
+Los endpoints de aplicación no ofrecen una ruta de detalle ni paginación: el
+frontend localiza la aplicación dentro de la lista limitada a 100 registros.
+
 ## Por integrar
 
-- Detalle de aplicación y administración de tecnologías.
-- Búsqueda y confirmación humana de CPE desde la interfaz.
 - Inicio/consulta de ejecuciones CVE y presentación de evidencia.
 - Historial de ejecuciones y hallazgos globales; la API actual no expone una
   lista agregada de esas ejecuciones.
