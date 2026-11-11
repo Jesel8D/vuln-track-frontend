@@ -19,6 +19,7 @@ directamente con PostgreSQL ni con NVD.
   de cobertura, conteos, avisos, evidencia y referencias seguras de NVD.
 - Resultados paginados en bloques de 20 y aplicabilidad rotulada como potencial
   o indeterminada; la interfaz no confirma vulnerabilidades automáticamente.
+- Historial paginado de consultas NVD por aplicación, persistente entre sesiones.
 - Mostrar el estado de ZAP como pendiente; no se simulan ejecuciones ni métricas.
 - La interfaz permite consultas CPE a `viewer`, pero oculta las acciones de
   escritura y confirmación; el backend sigue siendo quien autoriza cada operación.
@@ -34,6 +35,7 @@ directamente con PostgreSQL ni con NVD.
 - `PUT /api/v2/workspaces/{workspace_id}/applications/{application_id}/technologies/{technology_id}/cpe`
 - `POST /api/v2/workspaces/{workspace_id}/applications/{application_id}/technologies/{technology_id}/analyses`
 - `GET /api/v2/workspaces/{workspace_id}/applications/{application_id}/analyses/{run_id}`
+- `GET /api/v2/workspaces/{workspace_id}/applications/{application_id}/analyses?limit=&offset=`
 - `GET /api/v2/workspaces/{workspace_id}/applications/{application_id}/analyses/{run_id}/findings`
 
 La API limita las listas de aplicaciones y tecnologías a 100 registros. El
@@ -46,9 +48,6 @@ frontend localiza la aplicación dentro de la lista limitada a 100 registros.
 
 ## Por integrar
 
-- Historial de ejecuciones entre recargas; la API actual no expone una ruta de
-  lista, así que el último resultado solo se conserva en memoria de esta sesión.
-- Seguimiento/revisión de hallazgos; requiere endpoints V2 dedicados.
 - Seguimiento/revisión de hallazgos; requiere endpoints V2 dedicados.
 - OWASP ZAP Baseline y su pantalla de análisis. No se habilita ZAP desde la web
   hasta que el backend implemente autorización de destinos y controles de
