@@ -61,7 +61,7 @@ export function Brand({ compact = false }: { compact?: boolean }) {
       {!compact && (
         <span>
           Vuln<span className="brand-light">Track</span>
-          <small>IDENTIDAD DEL ACTIVO</small>
+          <small>SECOPS CORE</small>
         </span>
       )}
     </span>

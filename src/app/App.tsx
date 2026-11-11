@@ -1,20 +1,13 @@
-import { AnalysisHistoryPage } from "../pages/AnalysisHistoryPage";
-import { AnalysisRunPage } from "../pages/AnalysisRunPage";
-import { FindingPage } from "../pages/FindingPage";
 import { Component } from "react";
 import type { ReactNode } from "react";
 import { Navigate, Outlet, Route, Routes, useLocation } from "react-router";
 import { useAuth } from "../features/auth/context";
-import { AppLayout } from "../layouts/AppLayout";
 import { LoginPage } from "../pages/LoginPage";
-import { DashboardPage } from "../pages/DashboardPage";
-import { AssetsPage } from "../pages/AssetsPage";
-import { RegisterAssetPage } from "../pages/RegisterAssetPage";
-import { AssetDetailPage } from "../pages/AssetDetailPage";
-import { IdentificationPage } from "../pages/IdentificationPage";
-import { HistoryPage } from "../pages/HistoryPage";
 import { AccountPage } from "../pages/AccountPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
+import { V2Layout } from "../layouts/V2Layout";
+import { V2DashboardPage } from "../pages/V2DashboardPage";
+import { V2ApplicationsPage } from "../pages/V2ApplicationsPage";
 function Protected() {
   const { user } = useAuth();
   const location = useLocation();
@@ -33,28 +26,9 @@ export function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<Protected />}>
-        <Route element={<AppLayout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="activos" element={<AssetsPage />} />
-          <Route path="activos/nuevo" element={<RegisterAssetPage />} />
-          <Route path="activos/:assetId" element={<AssetDetailPage />} />
-          <Route
-            path="activos/:assetId/identificacion"
-            element={<IdentificationPage />}
-          />
-          <Route path="activos/:assetId/historial" element={<HistoryPage />} />
-          <Route
-            path="activos/:assetId/analisis"
-            element={<AnalysisHistoryPage />}
-          />
-          <Route
-            path="activos/:assetId/analisis/:runId"
-            element={<AnalysisRunPage />}
-          />
-          <Route
-            path="activos/:assetId/analisis/:runId/hallazgos/:findingId"
-            element={<FindingPage />}
-          />
+        <Route element={<V2Layout />}>
+          <Route index element={<V2DashboardPage />} />
+          <Route path="aplicaciones" element={<V2ApplicationsPage />} />
           <Route path="cuenta" element={<AccountPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

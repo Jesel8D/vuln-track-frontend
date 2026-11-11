@@ -18,6 +18,12 @@ import type {
   Token,
   User,
 } from "../types/api";
+import {
+  isApplicationList,
+  isTechnologyList,
+  isWorkspaceCreated,
+  isWorkspaceList,
+} from "./v2Contract";
 
 export class ApiError extends Error {
   constructor(
@@ -78,7 +84,7 @@ export function errorText(error: unknown): string {
     : "No pudimos completar la operación.";
 }
 interface RequestOptions {
-  method?: "GET" | "POST" | "PATCH";
+  method?: "GET" | "POST" | "PUT" | "PATCH";
   body?: unknown;
   key?: string;
   signal?: AbortSignal;
@@ -115,7 +121,11 @@ export class ApiClient {
     this.active.clear();
   }
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-    if (!(path.startsWith("/api/v1/") || path === "/health"))
+    if (!(
+      path.startsWith("/api/v1/") ||
+      path.startsWith("/api/v2/") ||
+      path === "/health"
+    ))
       throw new Error("Ruta API no permitida");
     const token = options.anonymous ? null : this.getToken();
     const controller = new AbortController();
@@ -175,7 +185,7 @@ export class ApiClient {
           response.status === 403
             ? "No tienes permiso para realizar esta operación."
             : response.status === 404
-              ? "No encontramos este recurso entre tus activos."
+              ? "No encontramos este recurso o no está disponible para tu cuenta."
               : (messages[code] ??
                 (response.status === 429
                   ? "Demasiadas solicitudes. Espera antes de intentar otra vez."
@@ -319,5 +329,44 @@ export class ApiClient {
       signal,
       anonymous: true,
     });
+  }
+  workspaces(signal?: AbortSignal) {
+    return this.checked("/api/v2/workspaces", isWorkspaceList, { signal });
+  }
+  createWorkspace(name: string, key: string) {
+    return this.checked("/api/v2/workspaces", isWorkspaceCreated, {
+      method: "POST",
+      body: { name },
+      key,
+    });
+  }
+  applications(workspaceId: string, signal?: AbortSignal) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications`,
+      isApplicationList,
+      { signal },
+    );
+  }
+  createApplication(
+    workspaceId: string,
+    body: import("../types/v2").ApplicationInput,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications`,
+      (value): value is import("../types/v2").Application =>
+        isApplicationList({ items: [value] }),
+      { method: "POST", body },
+    );
+  }
+  technologies(
+    workspaceId: string,
+    applicationId: string,
+    signal?: AbortSignal,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/technologies`,
+      isTechnologyList,
+      { signal },
+    );
   }
 }
