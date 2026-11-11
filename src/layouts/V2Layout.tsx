@@ -51,7 +51,7 @@ function LayoutContent() {
         title="Esta vista está pendiente de integración"
       >
         <Activity size={18} aria-hidden="true" />
-        Análisis y hallazgos <small>Pendiente</small>
+        Historial y seguimiento <small>Pendiente</small>
       </span>
     </nav>
   );
