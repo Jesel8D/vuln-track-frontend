@@ -21,6 +21,7 @@ import type {
 import {
   isApplicationList,
   isApplicationTargetList,
+  isWorkspaceTargetList,
   isAnalysisAccepted,
   isAnalysisHistory,
   isAnalysisRun,
@@ -566,6 +567,14 @@ export class ApiClient {
     return this.checked(
       `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/targets`,
       isApplicationTargetList,
+      { signal },
+    );
+  }
+  v2WorkspaceTargets(workspaceId: string, signal?: AbortSignal) {
+    const params = new URLSearchParams({ limit: "1000", offset: "0" });
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/targets?${params}`,
+      isWorkspaceTargetList,
       { signal },
     );
   }
