@@ -13,6 +13,7 @@ import type {
   TechnologyList,
   WorkspaceCreated,
   WorkspaceList,
+  WorkspaceTargetList,
   V2AnalysisStatus,
   V2Coverage,
 } from "../types/v2";
@@ -100,6 +101,41 @@ export function isApplicationTargetList(
         timestamp(item.created_at) &&
         timestamp(item.updated_at),
     )
+  );
+}
+
+export function isWorkspaceTargetList(
+  value: unknown,
+): value is WorkspaceTargetList {
+  return (
+    record(value) &&
+    Array.isArray(value.items) &&
+    value.items.length <= 1000 &&
+    value.items.every(
+      (item) =>
+        record(item) &&
+        typeof item.id === "string" &&
+        uuid.test(item.id) &&
+        typeof item.application_id === "string" &&
+        uuid.test(item.application_id) &&
+        bounded(item.application_name, 160) &&
+        ["active", "archived"].includes(String(item.application_status)) &&
+        bounded(item.url, 2048) &&
+        (item.label === null || bounded(item.label, 120)) &&
+        ["pending", "approved", "rejected", "expired"].includes(
+          String(item.authorization_status),
+        ) &&
+        (item.authorization_expires_at === null ||
+          timestamp(item.authorization_expires_at)) &&
+        (item.authorization_reference === null ||
+          bounded(item.authorization_reference, 500)) &&
+        timestamp(item.created_at) &&
+        timestamp(item.updated_at),
+    ) &&
+    record(value.page) &&
+    nonnegativeInteger(value.page.limit) &&
+    nonnegativeInteger(value.page.offset) &&
+    nonnegativeInteger(value.page.total)
   );
 }
 
