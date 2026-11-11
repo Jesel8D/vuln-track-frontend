@@ -26,6 +26,7 @@ import {
   isCpeCandidate,
   isCpeCandidateList,
   isNvdFindingList,
+  isNvdFinding,
   isTechnologyList,
   isWorkspaceCreated,
   isWorkspaceList,
@@ -80,6 +81,8 @@ const messages: Record<string, string> = {
     "El CPE no permite una consulta específica. Revisa el componente y la versión.",
   ANALYSIS_IN_PROGRESS:
     "Ya hay una consulta activa para esta tecnología. Espera antes de iniciar otra.",
+  FINDING_REVIEW_CONFLICT:
+    "El hallazgo ya fue revisado o cambió. Actualiza la lista antes de continuar.",
   ANALYSIS_NOT_FOUND: "No encontramos esta consulta dentro de la aplicación.",
   CPE_SELECTION_CHANGED:
     "La selección CPE cambió. Actualiza la tecnología antes de confirmarla.",
@@ -488,6 +491,22 @@ export class ApiClient {
       `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/analyses/${encodeURIComponent(runId)}/findings?${params}`,
       isNvdFindingList,
       { signal },
+    );
+  }
+  reviewV2Finding(
+    workspaceId: string,
+    applicationId: string,
+    findingId: string,
+    applicability: import("../types/v2").NvdApplicability,
+    expectedUpdatedAt: string,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/findings/${encodeURIComponent(findingId)}`,
+      isNvdFinding,
+      {
+        method: "PATCH",
+        body: { applicability, expected_updated_at: expectedUpdatedAt },
+      },
     );
   }
 }
