@@ -20,6 +20,8 @@ import type {
 } from "../types/api";
 import {
   isApplicationList,
+  isCpeCandidate,
+  isCpeCandidateList,
   isTechnologyList,
   isWorkspaceCreated,
   isWorkspaceList,
@@ -70,6 +72,12 @@ const messages: Record<string, string> = {
     "El CPE no permite una consulta específica. Revisa el componente y la versión.",
   ANALYSIS_IN_PROGRESS:
     "Ya hay una consulta en curso para este activo. Abre su historial.",
+  CPE_SELECTION_CHANGED:
+    "La selección CPE cambió. Actualiza la tecnología antes de confirmarla.",
+  CPE_CONFIRMATION_REQUIRED:
+    "Confirma un CPE compatible con la versión observada antes de consultar CVE.",
+  APPLICATION_NOT_FOUND: "La aplicación no está disponible en este workspace.",
+  TECHNOLOGY_NOT_FOUND: "La tecnología no está disponible en esta aplicación.",
   ANALYSIS_RATE_LIMIT:
     "Espera antes de iniciar otra consulta para este activo.",
   CVE_WORKER_UNAVAILABLE:
@@ -367,6 +375,55 @@ export class ApiClient {
       `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/technologies`,
       isTechnologyList,
       { signal },
+    );
+  }
+  createTechnology(
+    workspaceId: string,
+    applicationId: string,
+    body: import("../types/v2").TechnologyInput,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/technologies`,
+      (value): value is import("../types/v2").Technology =>
+        isTechnologyList({ items: [value] }),
+      { method: "POST", body },
+    );
+  }
+  searchV2Cpe(
+    workspaceId: string,
+    applicationId: string,
+    query: string,
+    signal?: AbortSignal,
+  ) {
+    const params = new URLSearchParams({
+      query,
+      product_query: query,
+      limit: "10",
+      offset: "0",
+    });
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/cpe-candidates?${params}`,
+      isCpeCandidateList,
+      { signal },
+    );
+  }
+  confirmV2Cpe(
+    workspaceId: string,
+    applicationId: string,
+    technologyId: string,
+    cpeNameId: string,
+    expectedSelectedCpe: string | null,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/technologies/${encodeURIComponent(technologyId)}/cpe`,
+      isCpeCandidate,
+      {
+        method: "PUT",
+        body: {
+          cpe_name_id: cpeNameId,
+          expected_selected_cpe: expectedSelectedCpe,
+        },
+      },
     );
   }
 }

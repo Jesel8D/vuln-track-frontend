@@ -46,3 +46,23 @@ export interface Technology {
 export interface TechnologyList {
   items: Technology[];
 }
+
+export interface TechnologyInput {
+  product: string;
+  vendor: string | null;
+  version: string;
+  detection_method: "manual" | "http_fingerprint" | "manifest_import";
+}
+
+export interface CpeCandidate {
+  cpe_name_id: string;
+  cpe_name: string;
+  title: string | null;
+  deprecated: boolean;
+}
+
+export interface CpeCandidateList {
+  items: CpeCandidate[];
+  page: { limit: number; offset: number; total: number };
+  source_timestamp: string;
+}

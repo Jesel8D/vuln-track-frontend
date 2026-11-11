@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router";
 import { AppWindow, CircleAlert, Plus, Search, X } from "lucide-react";
 import { useAuth } from "../features/auth/context";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
@@ -162,7 +163,12 @@ export function V2ApplicationsPage() {
                 {applications.map((application) => (
                   <tr key={application.id}>
                     <td>
-                      <strong>{application.name}</strong>
+                      <Link
+                        className="v2-application-link"
+                        to={`/aplicaciones/${application.id}`}
+                      >
+                        <strong>{application.name}</strong>
+                      </Link>
                       <small className="v2-mono">{application.id}</small>
                     </td>
                     <td>
