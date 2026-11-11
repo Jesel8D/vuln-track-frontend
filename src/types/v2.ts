@@ -157,6 +157,17 @@ export interface ApplicationTargetList {
   items: ApplicationTarget[];
 }
 
+export interface WorkspaceTarget extends ApplicationTarget {
+  application_id: string;
+  application_name: string;
+  application_status: "active" | "archived";
+}
+
+export interface WorkspaceTargetList {
+  items: WorkspaceTarget[];
+  page: { limit: number; offset: number; total: number };
+}
+
 export interface NvdFindingList {
   items: NvdFinding[];
   page: { limit: number; offset: number; total: number };
