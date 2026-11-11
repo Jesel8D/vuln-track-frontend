@@ -21,6 +21,8 @@ directamente con PostgreSQL ni con NVD.
   o indeterminada; la interfaz no confirma vulnerabilidades automáticamente.
 - Revisión humana de hallazgos abiertos (potencial, indeterminada o no
   aplicable), solo para owner/editor, con control de concurrencia y auditoría.
+- Medidas manuales por hallazgo con fuente HTTPS opcional y estados pendiente,
+  en corrección, corregido o riesgo aceptado.
 - Historial paginado de consultas NVD por aplicación, persistente entre sesiones.
 - Mostrar el estado de ZAP como pendiente; no se simulan ejecuciones ni métricas.
 - La interfaz permite consultas CPE a `viewer`, pero oculta las acciones de
@@ -40,6 +42,8 @@ directamente con PostgreSQL ni con NVD.
 - `GET /api/v2/workspaces/{workspace_id}/applications/{application_id}/analyses?limit=&offset=`
 - `GET /api/v2/workspaces/{workspace_id}/applications/{application_id}/analyses/{run_id}/findings`
 - `PATCH /api/v2/workspaces/{workspace_id}/applications/{application_id}/findings/{finding_id}`
+- `GET/POST /api/v2/workspaces/{workspace_id}/applications/{application_id}/findings/{finding_id}/recommendations`
+- `PATCH /api/v2/workspaces/{workspace_id}/applications/{application_id}/recommendations/{recommendation_id}`
 
 La API limita las listas de aplicaciones y tecnologías a 100 registros. El
 Dashboard consulta tecnologías solo para las cinco aplicaciones más recientes;
@@ -51,9 +55,6 @@ frontend localiza la aplicación dentro de la lista limitada a 100 registros.
 
 ## Por integrar
 
-- Seguimiento de recomendaciones (pendiente, en curso, corregido o riesgo
-  aceptado); requiere rutas V2 para administrar las recomendaciones existentes
-  en el modelo. La revisión de aplicabilidad ya está conectada por separado.
 - OWASP ZAP Baseline y su pantalla de análisis. No se habilita ZAP desde la web
   hasta que el backend implemente autorización de destinos y controles de
   SSRF/salida verificables.
