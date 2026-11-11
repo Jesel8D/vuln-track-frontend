@@ -9,6 +9,7 @@ import { V2Layout } from "../layouts/V2Layout";
 import { V2DashboardPage } from "../pages/V2DashboardPage";
 import { V2ApplicationsPage } from "../pages/V2ApplicationsPage";
 import { V2ApplicationPage } from "../pages/V2ApplicationPage";
+import { V2AnalysisHistoryPage } from "../pages/V2AnalysisHistoryPage";
 function Protected() {
   const { user } = useAuth();
   const location = useLocation();
@@ -34,6 +35,11 @@ export function App() {
             path="aplicaciones/:applicationId"
             element={<V2ApplicationPage />}
           />
+          <Route
+            path="aplicaciones/:applicationId/historial"
+            element={<V2AnalysisHistoryPage />}
+          />
+          <Route path="historial" element={<V2AnalysisHistoryPage />} />
           <Route path="cuenta" element={<AccountPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
