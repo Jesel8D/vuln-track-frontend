@@ -1,5 +1,6 @@
 import type {
   Application,
+  ApplicationTargetList,
   ApplicationList,
   AnalysisAccepted,
   AnalysisHistory,
@@ -72,6 +73,33 @@ export function isApplicationList(value: unknown): value is ApplicationList {
     Array.isArray(value.items) &&
     value.items.length <= 100 &&
     value.items.every(isApplication)
+  );
+}
+
+export function isApplicationTargetList(
+  value: unknown,
+): value is ApplicationTargetList {
+  return (
+    record(value) &&
+    Array.isArray(value.items) &&
+    value.items.length <= 100 &&
+    value.items.every(
+      (item) =>
+        record(item) &&
+        typeof item.id === "string" &&
+        uuid.test(item.id) &&
+        bounded(item.url, 2048) &&
+        (item.label === null || bounded(item.label, 120)) &&
+        ["pending", "approved", "rejected", "expired"].includes(
+          String(item.authorization_status),
+        ) &&
+        (item.authorization_expires_at === null ||
+          timestamp(item.authorization_expires_at)) &&
+        (item.authorization_reference === null ||
+          bounded(item.authorization_reference, 500)) &&
+        timestamp(item.created_at) &&
+        timestamp(item.updated_at),
+    )
   );
 }
 
