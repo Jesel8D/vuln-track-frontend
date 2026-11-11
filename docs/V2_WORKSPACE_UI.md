@@ -35,12 +35,18 @@ directamente con PostgreSQL ni con NVD.
   en corrección, corregido o riesgo aceptado.
 - Historial paginado de consultas NVD por aplicación, persistente entre sesiones.
 - Mostrar el estado de ZAP como pendiente; no se simulan ejecuciones ni métricas.
+- Vista de análisis web Baseline con destinos aprobados del workspace y estado
+  real de habilitación. El botón de ejecución permanece desactivado mientras el
+  backend no implemente y verifique aislamiento, allowlist y controles de DNS,
+  redirecciones y conexiones. No se muestran registros ni alertas ficticias.
 - La interfaz permite consultas CPE a `viewer`, pero oculta las acciones de
   escritura y confirmación; el backend sigue siendo quien autoriza cada operación.
 
 ## Rutas y datos
 
 - `GET /api/v2/workspaces/{workspace_id}/dashboard`
+- `GET /api/v2/workspaces/{workspace_id}/targets?limit=&offset=` para mostrar
+  destinos aprobados en la vista de análisis.
 - `GET /api/v2/workspaces` y `POST /api/v2/workspaces`
 - `GET /api/v2/workspaces/{workspace_id}/applications`
 - `POST /api/v2/workspaces/{workspace_id}/applications`
