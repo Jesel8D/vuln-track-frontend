@@ -1426,6 +1426,37 @@
   color: #a52626;
   background: #ffe2df;
 }
+.v2-finding-review {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+}
+.v2-finding-review label {
+  display: grid;
+  gap: 5px;
+  color: #62718a;
+  font-size: 11px;
+}
+.v2-finding-review select {
+  min-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: #263852;
+  background: #fff;
+}
+.v2-review-saved {
+  margin: 10px 0;
+  color: #087d71;
+  font-size: 12px;
+  font-weight: 600;
+}
 .v2-detail-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
