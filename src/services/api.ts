@@ -20,6 +20,7 @@ import type {
 } from "../types/api";
 import {
   isApplicationList,
+  isApplicationTargetList,
   isAnalysisAccepted,
   isAnalysisHistory,
   isAnalysisRun,
@@ -86,6 +87,8 @@ const messages: Record<string, string> = {
     "El hallazgo ya fue revisado o cambió. Actualiza la lista antes de continuar.",
   RECOMMENDATION_CONFLICT:
     "La medida cambió. Actualiza la lista antes de cambiar su estado.",
+  TARGET_AUTHORIZATION_CONFLICT:
+    "El destino cambió. Actualiza la vista antes de confirmar la autorización.",
   ANALYSIS_NOT_FOUND: "No encontramos esta consulta dentro de la aplicación.",
   CPE_SELECTION_CHANGED:
     "La selección CPE cambió. Actualiza la tecnología antes de confirmarla.",
@@ -557,6 +560,43 @@ export class ApiClient {
         method: "PATCH",
         body: { status, expected_updated_at: expectedUpdatedAt },
       },
+    );
+  }
+  v2Targets(workspaceId: string, applicationId: string, signal?: AbortSignal) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/targets`,
+      isApplicationTargetList,
+      { signal },
+    );
+  }
+  createV2Target(
+    workspaceId: string,
+    applicationId: string,
+    body: { url: string; label: string | null },
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/targets`,
+      (value): value is import("../types/v2").ApplicationTarget =>
+        isApplicationTargetList({ items: [value] }),
+      { method: "POST", body },
+    );
+  }
+  authorizeV2Target(
+    workspaceId: string,
+    applicationId: string,
+    targetId: string,
+    body: {
+      authorization_status: "approved" | "rejected";
+      authorization_expires_at: string | null;
+      authorization_reference: string;
+      expected_updated_at: string;
+    },
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/targets/${encodeURIComponent(targetId)}/authorization`,
+      (value): value is import("../types/v2").ApplicationTarget =>
+        isApplicationTargetList({ items: [value] }),
+      { method: "PATCH", body },
     );
   }
 }
