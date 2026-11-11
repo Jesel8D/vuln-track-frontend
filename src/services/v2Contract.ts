@@ -1,11 +1,17 @@
 import type {
   Application,
   ApplicationList,
+  AnalysisAccepted,
+  AnalysisRun,
   CpeCandidate,
   CpeCandidateList,
+  NvdFinding,
+  NvdFindingList,
   TechnologyList,
   WorkspaceCreated,
   WorkspaceList,
+  V2AnalysisStatus,
+  V2Coverage,
 } from "../types/v2";
 
 const uuid =
@@ -118,5 +124,104 @@ export function isCpeCandidateList(value: unknown): value is CpeCandidateList {
     typeof value.page.total === "number" &&
     Number.isInteger(value.page.total) &&
     timestamp(value.source_timestamp)
+  );
+}
+
+function isAnalysisStatus(value: unknown): value is V2AnalysisStatus {
+  return ["queued", "running", "completed", "failed"].includes(String(value));
+}
+
+function isCoverage(value: unknown): value is V2Coverage {
+  return value === null || value === "complete" || value === "partial";
+}
+
+const nonnegativeInteger = (value: unknown): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0;
+
+export function isAnalysisAccepted(value: unknown): value is AnalysisAccepted {
+  return (
+    record(value) &&
+    typeof value.id === "string" &&
+    uuid.test(value.id) &&
+    (value.status === undefined || isAnalysisStatus(value.status)) &&
+    (value.coverage === undefined || isCoverage(value.coverage)) &&
+    (value.total_results === undefined ||
+      value.total_results === null ||
+      nonnegativeInteger(value.total_results)) &&
+    (value.stored_count === undefined || nonnegativeInteger(value.stored_count))
+  );
+}
+
+export function isAnalysisRun(value: unknown): value is AnalysisRun {
+  return (
+    record(value) &&
+    typeof value.id === "string" &&
+    uuid.test(value.id) &&
+    isAnalysisStatus(value.status) &&
+    isCoverage(value.coverage) &&
+    (value.total_results === null || nonnegativeInteger(value.total_results)) &&
+    nonnegativeInteger(value.retrieved_count) &&
+    nonnegativeInteger(value.stored_count) &&
+    nonnegativeInteger(value.page_count) &&
+    Array.isArray(value.warning_codes) &&
+    value.warning_codes.length <= 100 &&
+    value.warning_codes.every(
+      (warning) =>
+        typeof warning === "string" && /^[A-Z0-9_]{1,80}$/.test(warning),
+    ) &&
+    (value.failure_code === null || bounded(value.failure_code, 80)) &&
+    (value.source_timestamp === null || timestamp(value.source_timestamp)) &&
+    timestamp(value.created_at) &&
+    (value.started_at === null || timestamp(value.started_at)) &&
+    (value.completed_at === null || timestamp(value.completed_at))
+  );
+}
+
+function isNvdFinding(value: unknown): value is NvdFinding {
+  return (
+    record(value) &&
+    typeof value.id === "string" &&
+    uuid.test(value.id) &&
+    typeof value.external_id === "string" &&
+    /^CVE-[0-9]{4}-[0-9]{4,}$/.test(value.external_id) &&
+    (value.title === null ||
+      (typeof value.title === "string" && value.title.length <= 500)) &&
+    (
+      [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "none",
+        "unknown",
+        null,
+      ] as unknown[]
+    ).includes(value.severity) &&
+    (value.cvss === null || record(value.cvss)) &&
+    ["potential", "undetermined", "not_applicable"].includes(
+      String(value.applicability),
+    ) &&
+    ["open", "reviewed", "resolved", "accepted_risk"].includes(
+      String(value.status),
+    ) &&
+    record(value.evidence) &&
+    timestamp(value.published_at) &&
+    timestamp(value.last_modified_at) &&
+    timestamp(value.observed_at)
+  );
+}
+
+export function isNvdFindingList(value: unknown): value is NvdFindingList {
+  return (
+    record(value) &&
+    Array.isArray(value.items) &&
+    value.items.length <= 100 &&
+    value.items.every(isNvdFinding) &&
+    record(value.page) &&
+    nonnegativeInteger(value.page.limit) &&
+    nonnegativeInteger(value.page.offset) &&
+    nonnegativeInteger(value.page.total) &&
+    isAnalysisStatus(value.run_status) &&
+    isCoverage(value.coverage)
   );
 }
