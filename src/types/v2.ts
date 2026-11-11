@@ -116,7 +116,10 @@ export interface NvdFinding {
   published_at: string;
   last_modified_at: string;
   observed_at: string;
+  updated_at: string;
 }
+
+export type NvdApplicability = "potential" | "undetermined" | "not_applicable";
 
 export interface NvdFindingList {
   items: NvdFinding[];
