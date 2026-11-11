@@ -15,6 +15,10 @@ directamente con PostgreSQL ni con NVD.
   presentan como agregados globales.
 - Detalle de aplicación con alta de tecnologías, búsqueda CPE bajo demanda y
   selección/confirmación explícita; la API compara la versión observada.
+- Consulta CVE explícita e idempotente por tecnología confirmada, presentación
+  de cobertura, conteos, avisos, evidencia y referencias seguras de NVD.
+- Resultados paginados en bloques de 20 y aplicabilidad rotulada como potencial
+  o indeterminada; la interfaz no confirma vulnerabilidades automáticamente.
 - Mostrar el estado de ZAP como pendiente; no se simulan ejecuciones ni métricas.
 - La interfaz permite consultas CPE a `viewer`, pero oculta las acciones de
   escritura y confirmación; el backend sigue siendo quien autoriza cada operación.
@@ -28,6 +32,9 @@ directamente con PostgreSQL ni con NVD.
 - `POST /api/v2/workspaces/{workspace_id}/applications/{application_id}/technologies`
 - `GET /api/v2/workspaces/{workspace_id}/applications/{application_id}/cpe-candidates`
 - `PUT /api/v2/workspaces/{workspace_id}/applications/{application_id}/technologies/{technology_id}/cpe`
+- `POST /api/v2/workspaces/{workspace_id}/applications/{application_id}/technologies/{technology_id}/analyses`
+- `GET /api/v2/workspaces/{workspace_id}/applications/{application_id}/analyses/{run_id}`
+- `GET /api/v2/workspaces/{workspace_id}/applications/{application_id}/analyses/{run_id}/findings`
 
 La API limita las listas de aplicaciones y tecnologías a 100 registros. El
 Dashboard consulta tecnologías solo para las cinco aplicaciones más recientes;
@@ -39,9 +46,9 @@ frontend localiza la aplicación dentro de la lista limitada a 100 registros.
 
 ## Por integrar
 
-- Inicio/consulta de ejecuciones CVE y presentación de evidencia.
-- Historial de ejecuciones y hallazgos globales; la API actual no expone una
-  lista agregada de esas ejecuciones.
+- Historial de ejecuciones entre recargas; la API actual no expone una ruta de
+  lista, así que el último resultado solo se conserva en memoria de esta sesión.
+- Seguimiento/revisión de hallazgos; requiere endpoints V2 dedicados.
 - Seguimiento/revisión de hallazgos; requiere endpoints V2 dedicados.
 - OWASP ZAP Baseline y su pantalla de análisis. No se habilita ZAP desde la web
   hasta que el backend implemente autorización de destinos y controles de
