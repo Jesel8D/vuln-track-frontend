@@ -22,6 +22,7 @@ import {
   isApplicationList,
   isApplicationTargetList,
   isWorkspaceTargetList,
+  isV2Dashboard,
   isAnalysisAccepted,
   isAnalysisHistory,
   isAnalysisRun,
@@ -575,6 +576,13 @@ export class ApiClient {
     return this.checked(
       `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/targets?${params}`,
       isWorkspaceTargetList,
+      { signal },
+    );
+  }
+  v2Dashboard(workspaceId: string, signal?: AbortSignal) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/dashboard`,
+      isV2Dashboard,
       { signal },
     );
   }
