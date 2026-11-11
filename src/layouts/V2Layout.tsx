@@ -1,13 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
-import {
-  Activity,
-  Boxes,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  X,
-} from "lucide-react";
+import { Boxes, History, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import { Brand } from "../components/ui";
 import { useAuth } from "../features/auth/context";
 import {
@@ -18,6 +11,7 @@ import {
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/aplicaciones", label: "Aplicaciones", icon: Boxes, end: false },
+  { to: "/historial", label: "Historial", icon: History, end: false },
 ];
 
 function LayoutContent() {
@@ -48,10 +42,9 @@ function LayoutContent() {
       <span
         className="v2-nav-link v2-nav-disabled"
         aria-disabled="true"
-        title="Esta vista está pendiente de integración"
+        title="Seguimiento de hallazgos pendiente de integración"
       >
-        <Activity size={18} aria-hidden="true" />
-        Historial y seguimiento <small>Pendiente</small>
+        Seguimiento <small>Pendiente</small>
       </span>
     </nav>
   );
