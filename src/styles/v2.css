@@ -545,6 +545,10 @@
   color: #087d71;
   background: #def7f2;
 }
+.v2-status-info {
+  color: #315a91;
+  background: #e4edfc;
+}
 .v2-status-archived {
   color: #6b7481;
   background: #edf0f4;
@@ -1412,6 +1416,31 @@
   border-radius: 7px;
   color: #263852;
   background: #fff;
+}
+.v2-history-results {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #e7ecf3;
+}
+.v2-history-results h2 {
+  margin-bottom: 12px;
+  color: #20324a;
+  font-size: 16px;
+}
+.v2-history-findings-list {
+  display: grid;
+  gap: 12px;
+}
+.v2-history-finding {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f9fbff;
+}
+.v2-history-finding h3 {
+  margin: 10px 0;
+  color: #243852;
+  font-size: 14px;
 }
 .v2-status-queued,
 .v2-status-running,
