@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   CircleAlert,
   Fingerprint,
+  History,
   Plus,
   Search,
   ShieldCheck,
@@ -405,6 +406,12 @@ export function V2ApplicationPage() {
         <span className={`v2-status v2-status-${application.status}`}>
           {application.status === "active" ? "Activa" : "Archivada"}
         </span>
+        <Link
+          className="v2-secondary-button"
+          to={`/aplicaciones/${application.id}/historial`}
+        >
+          <History size={16} /> Historial NVD
+        </Link>
       </section>
       <section className="v2-detail-summary">
         <article>
