@@ -199,7 +199,7 @@ export function isAnalysisHistory(value: unknown): value is AnalysisHistory {
   );
 }
 
-function isNvdFinding(value: unknown): value is NvdFinding {
+export function isNvdFinding(value: unknown): value is NvdFinding {
   return (
     record(value) &&
     typeof value.id === "string" &&
@@ -229,7 +229,8 @@ function isNvdFinding(value: unknown): value is NvdFinding {
     record(value.evidence) &&
     timestamp(value.published_at) &&
     timestamp(value.last_modified_at) &&
-    timestamp(value.observed_at)
+    timestamp(value.observed_at) &&
+    timestamp(value.updated_at)
   );
 }
 
