@@ -142,6 +142,21 @@ export interface RecommendationList {
   items: Recommendation[];
 }
 
+export interface ApplicationTarget {
+  id: string;
+  url: string;
+  label: string | null;
+  authorization_status: "pending" | "approved" | "rejected" | "expired";
+  authorization_expires_at: string | null;
+  authorization_reference: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApplicationTargetList {
+  items: ApplicationTarget[];
+}
+
 export interface NvdFindingList {
   items: NvdFinding[];
   page: { limit: number; offset: number; total: number };
