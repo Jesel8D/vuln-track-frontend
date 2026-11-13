@@ -2,7 +2,13 @@ import { defineConfig } from "@playwright/test";
 if (
   !process.env.E2E_WEB_URL ||
   !process.env.E2E_API_URL ||
-  !process.env.TEST_DISPOSABLE_DATABASE?.startsWith("vulntrack-web-test-")
+  !(
+    process.env.TEST_DISPOSABLE_DATABASE?.startsWith("vulntrack-web-test-") ||
+    (process.env.E2E_PROFILE === "v2-registration" &&
+      process.env.TEST_DISPOSABLE_DATABASE?.startsWith(
+        "vulntrack-backend-test-v2-",
+      ))
+  )
 ) {
   throw new Error(
     "Usar ../backend/.venv/bin/python scripts/dev_stack.py --e2e; no aceptar una base existente",
@@ -10,6 +16,10 @@ if (
 }
 export default defineConfig({
   testDir: "./tests/e2e",
+  testMatch:
+    process.env.E2E_PROFILE === "v2-registration"
+      ? "registration.spec.ts"
+      : /(?:web|z-cve)\.spec\.ts/,
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -38,6 +48,7 @@ export default defineConfig({
       DATABASE_URL: "",
       MIGRATION_DATABASE_URL: "",
       TOKEN_SECRET: "",
+      WORKSPACE_HMAC_KEY: "",
       NVD_API_KEY: "",
       POSTGRES_PASSWORD: "",
       TEST_PASSWORD: "",

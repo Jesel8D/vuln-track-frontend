@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Navigate, Outlet, Route, Routes, useLocation } from "react-router";
 import { useAuth } from "../features/auth/context";
 import { LoginPage } from "../pages/LoginPage";
+import { RegisterPage } from "../pages/RegisterPage";
 import { AccountPage } from "../pages/AccountPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { V2Layout } from "../layouts/V2Layout";
@@ -28,6 +29,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/crear-cuenta" element={<RegisterPage />} />
       <Route element={<Protected />}>
         <Route element={<V2Layout />}>
           <Route index element={<V2DashboardPage />} />

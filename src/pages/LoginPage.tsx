@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router";
+import { Link, Navigate, useLocation, useNavigate } from "react-router";
 import {
   ArrowRight,
   Eye,
@@ -174,8 +174,7 @@ export function LoginPage() {
           <div className="access-note">
             <strong>¿Aún no tienes una cuenta?</strong>
             <p>
-              Solicita una cuenta al responsable de tu instalación. El registro
-              público no está habilitado.
+              <Link to="/crear-cuenta">Crear cuenta</Link>
             </p>
           </div>
         </div>

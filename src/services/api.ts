@@ -49,6 +49,13 @@ export class ApiError extends Error {
   }
 }
 const messages: Record<string, string> = {
+  REGISTRATION_UNAVAILABLE:
+    "No pudimos crear la cuenta. Prueba otro usuario o intenta iniciar sesión si ya te registraste.",
+  REGISTRATION_DISABLED:
+    "Esta instalación no tiene habilitado el registro de cuentas.",
+  REGISTRATION_RATE_LIMIT:
+    "Alcanzaste el límite temporal de registros. Espera antes de reintentar.",
+  REGISTRATION_BUSY: "El registro está ocupado. Espera antes de reintentar.",
   INVALID_CREDENTIALS: "Usuario o contraseña incorrectos, o sesión no válida.",
   VALIDATION_ERROR: "Revisa los campos y los límites indicados.",
   CPE_UNAVAILABLE:
@@ -255,6 +262,29 @@ export class ApiClient {
       anonymous: true,
       signal,
     });
+  }
+  async registerAccount(username: string, password: string) {
+    const identity = await this.request<User>("/api/v1/auth/register", {
+      method: "POST",
+      body: { username, password },
+      anonymous: true,
+    });
+    if (
+      !identity ||
+      typeof identity.id !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        identity.id,
+      ) ||
+      identity.username !== username ||
+      Object.keys(identity).sort().join(",") !== "id,username"
+    ) {
+      throw new ApiError(
+        0,
+        "INVALID_RESPONSE",
+        "No pudimos confirmar la creación. Intenta iniciar sesión antes de repetir el registro.",
+      );
+    }
+    return identity;
   }
   me(signal?: AbortSignal) {
     return this.request<User>("/api/v1/auth/me", { signal });
