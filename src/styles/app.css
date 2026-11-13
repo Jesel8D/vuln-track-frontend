@@ -1678,13 +1678,15 @@ code {
   letter-spacing: 2px;
   margin-bottom: 24px;
 }
-.story-content h1 {
+.story-content h1,
+.registration-page .story-content h2 {
   font-size: clamp(32px, 3.1vw, 48px);
   font-weight: 500;
   line-height: 1.2;
   letter-spacing: -1.5px;
 }
-.story-content h1 > span {
+.story-content h1 > span,
+.registration-page .story-content h2 > span {
   color: var(--link);
 }
 .story-description {
@@ -1761,7 +1763,8 @@ code {
   letter-spacing: 1.5px;
   color: var(--faint);
 }
-.login-form-wrap h2 {
+.login-form-wrap h2,
+.login-form-wrap .registration-title {
   font-size: 28px;
   font-weight: 500;
   letter-spacing: -0.7px;

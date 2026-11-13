@@ -1,5 +1,9 @@
 # Auditoría previa — Web V1
 
+Antecedente conservado: la rama actual añade [registro público controlado V2](SELF_SERVICE_REGISTRATION.md).
+No introduce otro login, roles globales ni almacenamiento persistente de tokens.
+La ausencia de registro descrita abajo corresponde a la revisión original MVP-A.
+
 Repositorios limpios, remotos SSH oficiales y hashes MVP-A sin cambios posteriores
 al recuperar: Backend2e12bad, Database80db7fd, Contextcaa7ef1. Frontend sin commits.
 Solo se crea feat/frontend-web-v1. No hacen falta cambios Backend/Database.

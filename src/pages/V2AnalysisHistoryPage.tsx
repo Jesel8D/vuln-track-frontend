@@ -111,6 +111,21 @@ export function V2AnalysisHistoryPage() {
       </section>
     );
   }
+  if (!routeApplicationId && applications.data?.items.length === 0) {
+    return (
+      <section className="v2-panel v2-empty-inline">
+        <History aria-hidden="true" />
+        <h1>Aún no hay análisis registrados</h1>
+        <p>
+          Registra una aplicación y añade sus tecnologías para comenzar tu
+          historial.
+        </p>
+        <Link className="v2-secondary-button" to="/aplicaciones">
+          {canWrite ? "Registrar aplicación" : "Ver aplicaciones"}
+        </Link>
+      </section>
+    );
+  }
   if (!application) {
     return (
       <section className="v2-panel v2-empty-inline">

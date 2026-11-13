@@ -1,5 +1,11 @@
 # VulnTrack · Web MVP-B
 
+Registro de cuentas V2 preparado en `feat/v2-registration-web`:
+[crear cuenta, login y entorno reproducible](docs/SELF_SERVICE_REGISTRATION.md) ·
+[resultados actuales](docs/SELF_SERVICE_REGISTRATION_RESULTS.md).
+Para esta rama usar `scripts/v2_registration_stack.py`; el launcher MVP-B
+documentado más abajo es un antecedente y no inicializa Database V2.
+
 ## Estado de la rama `rudi`
 
 La interfaz principal en esta rama se está migrando a Database V2: workspaces,
