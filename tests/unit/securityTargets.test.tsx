@@ -120,8 +120,9 @@ it("shows registered, declared, rejected and expired targets without enabling ex
     screen.getByRole("option", { name: /Declaración vencida/ }),
   ).toBeVisible();
   await userEvent.setup().selectOptions(select, items[1].id);
+  expect(screen.getByText("Pendiente de verificación técnica")).toBeVisible();
   expect(screen.getByRole("status")).toHaveTextContent(
-    "Control del destino sin verificar",
+    "Declarar la propiedad no prueba el control del dominio",
   );
   const button = screen.getByRole("button", {
     name: "Iniciar análisis Baseline",
@@ -151,9 +152,9 @@ it("keeps execution disabled even if a future response describes verified contro
     name: "Destino registrado",
   });
   await userEvent.setup().selectOptions(select, item.id);
-  expect(screen.getByRole("status")).toHaveTextContent(
-    "Control verificado; ejecución bloqueada",
-  );
+  expect(
+    screen.getByText("Control verificado; ejecución bloqueada"),
+  ).toBeVisible();
   expect(
     screen.getByRole("button", { name: "Iniciar análisis Baseline" }),
   ).toBeDisabled();
@@ -181,6 +182,33 @@ it("fails contract validation on missing, inconsistent or enabled readiness", ()
   const incomplete = { ...item, analysis_readiness: undefined };
   expect(isApplicationTargetList({ items: [incomplete] })).toBe(false);
 });
+
+it.each([
+  ["revoked", "Verificación técnica revocada"],
+  ["expired", "Autorización expirada; análisis no elegible"],
+  ["rejected", "Declaración rechazada o retirada; control sin verificar"],
+  ["incomplete", "Datos de autorización incompletos"],
+] as const)(
+  "shows API verification state %s and keeps execution disabled",
+  async (state, label) => {
+    const item = target("approved");
+    item.analysis_readiness = readiness(state);
+    mock.api.v2WorkspaceTargets.mockResolvedValue({
+      items: [item],
+      page: { limit: 100, offset: 0, total: 1 },
+    });
+    mount(<V2SecurityAnalysisPage />);
+    const select = await screen.findByRole("combobox", {
+      name: "Destino registrado",
+    });
+    await userEvent.setup().selectOptions(select, item.id);
+    expect(screen.getByText(label)).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Iniciar análisis Baseline" }),
+    ).toBeDisabled();
+    expect(mock.api.authorizeV2Target).not.toHaveBeenCalled();
+  },
+);
 
 it("withdraws a declaration through the existing API with its version and a reason", async () => {
   const item = target("approved");
@@ -224,6 +252,6 @@ it("does not offer declaration writes to a viewer", async () => {
       canWrite={false}
     />,
   );
-  await screen.findByText("Control del destino sin verificar");
+  await screen.findByText("Pendiente de verificación técnica");
   expect(screen.queryByText("Retirar declaración")).not.toBeInTheDocument();
 });

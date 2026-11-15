@@ -1,12 +1,14 @@
 # VulnTrack · Web MVP-B
 
-La rama `feat/v2-security-analysis-web-phase1` requiere Backend
-`feat/v2-security-analysis-phase1` y Database V2 compatible `b377b5b`.
+La rama `feat/v2-security-analysis-web-phase2a` se revisa con Backend
+`feat/v2-security-analysis-phase2a` y Database V2 compatible `b377b5b`.
 La API entrega `analysis_readiness`; ante una respuesta incompleta el cliente
 falla cerrado. Las declaraciones vigentes no prueban control del dominio y el
-botón ZAP continúa deshabilitado. El [informe de Fase 1](https://github.com/Jesel8D/vuln-track-backend/blob/feat/v2-security-analysis-phase1/docs/V2_SECURITY_ANALYSIS_PHASE1.md)
-documenta pruebas, límites y un perfil preview aislado. Los launchers temporales
-de este README no deben usarse para conservar datos personales.
+botón ZAP continúa deshabilitado. El [contrato de esta vista](docs/V2_SECURITY_PHASE2A.md)
+distingue declaración, verificación y elegibilidad. Backend documenta componentes
+de laboratorio y el plan emparejado de actualización/rollback; no habilita una
+verificación remota real ni despliega cambios automáticamente. Los launchers
+temporales de este README no deben usarse para conservar datos personales.
 
 Registro de cuentas V2 preparado en `feat/v2-registration-web`:
 [crear cuenta, login y entorno reproducible](docs/SELF_SERVICE_REGISTRATION.md) ·
