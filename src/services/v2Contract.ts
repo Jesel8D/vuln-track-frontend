@@ -17,6 +17,7 @@ import type {
   V2Dashboard,
   V2AnalysisStatus,
   V2Coverage,
+  TargetReadiness,
 } from "../types/v2";
 
 const uuid =
@@ -78,6 +79,40 @@ export function isApplicationList(value: unknown): value is ApplicationList {
   );
 }
 
+export function isTargetReadiness(value: unknown): value is TargetReadiness {
+  if (!record(value)) return false;
+  const reasons = value.blocking_reasons;
+  return (
+    value.policy_version === "web-public-v1" &&
+    [
+      "registered",
+      "requested",
+      "verification_pending",
+      "verified",
+      "rejected",
+      "revoked",
+      "expired",
+      "incomplete",
+    ].includes(String(value.authorization_state)) &&
+    typeof value.control_verified === "boolean" &&
+    value.control_verified === (value.authorization_state === "verified") &&
+    typeof value.url_policy_allowed === "boolean" &&
+    (!value.control_verified || value.url_policy_allowed) &&
+    value.execution_enabled === false &&
+    Array.isArray(reasons) &&
+    reasons.length >= 3 &&
+    reasons.length <= 12 &&
+    reasons.every(
+      (reason) => typeof reason === "string" && /^[A-Z_]{1,80}$/.test(reason),
+    ) &&
+    [
+      "PINNED_TRANSPORT_UNAVAILABLE",
+      "NETWORK_ISOLATION_UNAVAILABLE",
+      "WEB_EXECUTOR_DISABLED",
+    ].every((reason) => reasons.includes(reason))
+  );
+}
+
 export function isApplicationTargetList(
   value: unknown,
 ): value is ApplicationTargetList {
@@ -100,7 +135,8 @@ export function isApplicationTargetList(
         (item.authorization_reference === null ||
           bounded(item.authorization_reference, 500)) &&
         timestamp(item.created_at) &&
-        timestamp(item.updated_at),
+        timestamp(item.updated_at) &&
+        isTargetReadiness(item.analysis_readiness),
     )
   );
 }
@@ -131,7 +167,8 @@ export function isWorkspaceTargetList(
         (item.authorization_reference === null ||
           bounded(item.authorization_reference, 500)) &&
         timestamp(item.created_at) &&
-        timestamp(item.updated_at),
+        timestamp(item.updated_at) &&
+        isTargetReadiness(item.analysis_readiness),
     ) &&
     record(value.page) &&
     nonnegativeInteger(value.page.limit) &&

@@ -220,7 +220,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #8592a4;
+  color: #52647b;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.8px;
@@ -283,7 +283,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 13px 30px 20px;
-  color: #8895a8;
+  color: #52647b;
   font-size: 11px;
 }
 .v2-page {
@@ -925,8 +925,16 @@
   font-size: 14px;
 }
 .v2-zap-console-heading > span {
-  color: var(--muted);
+  color: #52647b;
   font-size: 11px;
+}
+.v2-zap-page .v2-zap-step,
+.v2-zap-page .v2-zap-target-details span,
+.v2-zap-page .v2-zap-profile-grid span,
+.v2-zap-page .v2-analysis-help,
+.v2-zap-page .v2-zap-phase:not(.is-blocked) span,
+.v2-zap-page .v2-zap-phase:not(.is-blocked) small {
+  color: #52647b;
 }
 .v2-zap-blocked-state {
   display: grid;

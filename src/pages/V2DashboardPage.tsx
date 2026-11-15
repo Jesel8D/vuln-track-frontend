@@ -279,7 +279,7 @@ export function V2DashboardPage() {
           <h1>{current.name}</h1>
           <p>
             {query.data
-              ? `${query.data.summary.authorized_targets_total} de ${query.data.summary.targets_total} URLs con autorización vigente registrada.`
+              ? `${query.data.summary.authorized_targets_total} de ${query.data.summary.targets_total} URLs con declaración vigente; control sin verificar.`
               : "Consulta CVE por CPE y versión confirmados."}
           </p>
         </div>
@@ -360,7 +360,7 @@ export function V2DashboardPage() {
             <ShieldCheck size={17} />
             <span>
               {query.data.summary.targets_total} destinos registrados ·{" "}
-              {query.data.summary.authorized_targets_total} con autorización
+              {query.data.summary.authorized_targets_total} con declaración
               vigente registrada.
             </span>
             <strong>ZAP Baseline aún no está habilitado.</strong>

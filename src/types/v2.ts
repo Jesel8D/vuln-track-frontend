@@ -142,6 +142,23 @@ export interface RecommendationList {
   items: Recommendation[];
 }
 
+export interface TargetReadiness {
+  policy_version: "web-public-v1";
+  authorization_state:
+    | "registered"
+    | "requested"
+    | "verification_pending"
+    | "verified"
+    | "rejected"
+    | "revoked"
+    | "expired"
+    | "incomplete";
+  control_verified: boolean;
+  url_policy_allowed: boolean;
+  execution_enabled: false;
+  blocking_reasons: string[];
+}
+
 export interface ApplicationTarget {
   id: string;
   url: string;
@@ -149,6 +166,7 @@ export interface ApplicationTarget {
   authorization_status: "pending" | "approved" | "rejected" | "expired";
   authorization_expires_at: string | null;
   authorization_reference: string | null;
+  analysis_readiness: TargetReadiness;
   created_at: string;
   updated_at: string;
 }

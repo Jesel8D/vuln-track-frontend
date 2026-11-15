@@ -235,9 +235,9 @@ export function V2ApplicationsPage() {
                                   className={`v2-status v2-status-${target.authorization_status}`}
                                 >
                                   {target.authorization_status === "approved"
-                                    ? "Autorizada"
+                                    ? "Declaración vigente"
                                     : target.authorization_status === "rejected"
-                                      ? "Rechazada"
+                                      ? "Rechazada o retirada"
                                       : target.authorization_status ===
                                           "expired"
                                         ? "Vencida"
@@ -278,7 +278,7 @@ export function V2ApplicationsPage() {
                         ? "No disponible"
                         : (targetsByApplication.get(application.id) ?? [])
                               .length
-                          ? `${(targetsByApplication.get(application.id) ?? []).filter((target) => target.authorization_status === "approved").length} de ${(targetsByApplication.get(application.id) ?? []).length} autorizadas`
+                          ? `${(targetsByApplication.get(application.id) ?? []).filter((target) => target.authorization_status === "approved").length} de ${(targetsByApplication.get(application.id) ?? []).length} con declaración vigente`
                           : "Sin destinos"}
                     </td>
                     <td>
