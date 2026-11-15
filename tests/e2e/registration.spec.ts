@@ -311,6 +311,69 @@ test("security preparation uses real declarations and stays blocked on desktop a
   await expect(page.getByRole("status")).toContainText(
     "Declarar la propiedad no prueba el control del dominio",
   );
+  const verificationPanel = page.getByRole("region", {
+    name: "Verificación del destino",
+  });
+  const issuedResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/verifications") &&
+      response.request().method() === "POST",
+  );
+  await verificationPanel
+    .getByRole("button", { name: "Emitir desafío" })
+    .click();
+  const issuedHTTP = await issuedResponse;
+  expect(issuedHTTP.status()).toBe(201);
+  expect(issuedHTTP.headers()["cache-control"]).toBe("no-store");
+  const issued = await issuedHTTP.json();
+  await expect(
+    verificationPanel.getByLabel("Contenido del archivo de desafío"),
+  ).toHaveValue(issued.instructions.body);
+  await expect(verificationPanel.getByText("Desafío pendiente")).toBeVisible();
+  expect(issued.challenge.control_verified).toBe(false);
+  const verifications = `${base}/${targets[1].id}/verifications`;
+  const blocked = await page.request.post(
+    `${verifications}/${issued.challenge.id}/verify`,
+    {
+      headers,
+      data: { expected_version: 1 },
+    },
+  );
+  expect(blocked.status()).toBe(503);
+  const detail = await page.request.get(
+    `${verifications}/${issued.challenge.id}`,
+    { headers },
+  );
+  expect((await detail.json()).attempts).toBe(0);
+  const foreignAccount = account();
+  expect(
+    (
+      await page.request.post(api + "/api/v1/auth/register", {
+        data: foreignAccount,
+      })
+    ).status(),
+  ).toBe(201);
+  const foreignLogin = await page.request.post(api + "/api/v1/auth/login", {
+    data: foreignAccount,
+  });
+  expect(
+    (
+      await page.request.get(`${verifications}/${issued.challenge.id}`, {
+        headers: {
+          Authorization: `Bearer ${(await foreignLogin.json()).access_token}`,
+        },
+      })
+    ).status(),
+  ).toBe(404);
+  await verificationPanel
+    .getByRole("button", { name: "Revocar desafío" })
+    .click();
+  await expect(
+    verificationPanel.getByText("Desafío revocado", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    verificationPanel.getByLabel("Contenido del archivo de desafío"),
+  ).toHaveCount(0);
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await expect(
@@ -323,7 +386,7 @@ test("security preparation uses real declarations and stays blocked on desktop a
     ).toBeTruthy();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.screenshot({
-      path: `test-results/security-phase1-${width}.png`,
+      path: `test-results/security-phase2b-${width}.png`,
       fullPage: true,
     });
   }

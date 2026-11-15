@@ -16,6 +16,18 @@ const mock = vi.hoisted(() => ({
     v2WorkspaceTargets: vi.fn(),
     v2Targets: vi.fn(),
     authorizeV2Target: vi.fn(),
+    v2Verifications: vi
+      .fn()
+      .mockResolvedValue({
+        items: [],
+        remote_verification_available: false,
+        execution_enabled: false,
+        blocking_reasons: [
+          "PUBLIC_EGRESS_UNPROVEN",
+          "OPERATIONAL_DNS_UNAVAILABLE",
+          "WEB_EXECUTOR_DISABLED",
+        ],
+      }),
   },
 }));
 vi.mock("../../src/features/auth/context", () => ({

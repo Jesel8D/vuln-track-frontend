@@ -12,6 +12,7 @@ import {
 import { useAuth } from "../features/auth/context";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
 import type { WorkspaceTarget } from "../types/v2";
+import { TargetVerification } from "../features/v2/TargetVerification";
 import {
   targetAuthorizationLabel,
   targetControlLabel,
@@ -166,6 +167,14 @@ export function V2SecurityAnalysisPage() {
               verificación remota aún no está disponible. Ningún destino es
               elegible para análisis en esta fase.
             </p>
+          )}
+          {selectedTarget && selectedId && (
+            <TargetVerification
+              key={`${selectedId}/${selectedTarget.id}`}
+              workspaceId={selectedId}
+              target={selectedTarget}
+              canWrite={current?.role === "owner" || current?.role === "editor"}
+            />
           )}
 
           <div className="v2-zap-profile-grid">
