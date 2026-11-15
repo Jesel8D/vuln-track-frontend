@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import type { ApplicationTarget } from "../../src/types/v2";
 
 const api = process.env.E2E_API_URL!;
 const account = () => ({
@@ -207,6 +208,123 @@ test("registration is responsive and has basic accessible form semantics", async
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBeTruthy();
+});
+
+test("security preparation uses real declarations and stays blocked on desktop and mobile", async ({
+  page,
+}) => {
+  const identity = account();
+  await register(page, identity);
+  const authorization = await login(page, identity);
+  const headers = { Authorization: authorization };
+  const directory = await page.request.get(api + "/api/v2/workspaces", {
+    headers,
+  });
+  const workspace = (await directory.json()).items[0].workspace_id;
+  const created = await page.request.post(
+    api + `/api/v2/workspaces/${workspace}/applications`,
+    {
+      headers,
+      data: { name: "DEMO security phase1 - disposable only" },
+    },
+  );
+  expect(created.status()).toBe(201);
+  const application = (await created.json()).id;
+  const base =
+    api + `/api/v2/workspaces/${workspace}/applications/${application}/targets`;
+  const targets: ApplicationTarget[] = [];
+  for (const label of [
+    "Pending laboratory declaration",
+    "Declared laboratory target",
+    "Withdrawn laboratory declaration",
+  ]) {
+    const response = await page.request.post(base, {
+      headers,
+      data: { url: "https://example.com/", label },
+    });
+    expect(response.status()).toBe(201);
+    targets.push(await response.json());
+  }
+  for (const index of [1, 2]) {
+    const response = await page.request.patch(
+      base + `/${targets[index].id}/authorization`,
+      {
+        headers,
+        data: {
+          authorization_status: "approved",
+          authorization_expires_at: new Date(
+            Date.now() + 3600_000,
+          ).toISOString(),
+          authorization_reference:
+            "Synthetic declaration in disposable test; never authorizes a scan",
+          expected_updated_at: targets[index].updated_at,
+        },
+      },
+    );
+    expect(response.status()).toBe(200);
+    targets[index] = await response.json();
+    expect(targets[index].analysis_readiness.control_verified).toBe(false);
+  }
+  expect(
+    (
+      await page.request.patch(base + `/${targets[2].id}/authorization`, {
+        headers,
+        data: {
+          authorization_status: "rejected",
+          authorization_expires_at: null,
+          authorization_reference: "Laboratory declaration withdrawn",
+          expected_updated_at: targets[2].updated_at,
+        },
+      })
+    ).status(),
+  ).toBe(200);
+  expect(
+    (
+      await page.request.post(base, {
+        headers,
+        data: { url: "http://127.0.0.1:8080/" },
+      })
+    ).status(),
+  ).toBe(422);
+  const external: string[] = [];
+  const webOrigin = new URL(page.url()).origin;
+  page.on("request", (request) => {
+    const origin = new URL(request.url()).origin;
+    if (origin !== webOrigin && origin !== new URL(api).origin)
+      external.push(origin);
+  });
+  await page
+    .getByRole("link", { name: "Análisis de seguridad", exact: true })
+    .click();
+  const select = page.getByRole("combobox", { name: "Destino registrado" });
+  await expect(select.getByRole("option")).toHaveCount(4);
+  await expect(
+    select.getByRole("option", { name: /Pendiente de declaración/ }),
+  ).toHaveCount(1);
+  await expect(
+    select.getByRole("option", { name: /rechazada o retirada/ }),
+  ).toHaveCount(1);
+  await select.selectOption(targets[1].id);
+  await expect(page.getByRole("status")).toContainText(
+    "Control del destino sin verificar",
+  );
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await expect(
+      page.getByRole("button", { name: "Iniciar análisis Baseline" }),
+    ).toBeDisabled();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBeTruthy();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.screenshot({
+      path: `test-results/security-phase1-${width}.png`,
+      fullPage: true,
+    });
+  }
+  expect(external).toEqual([]);
 });
 
 test("real registration throttling is displayed with retry guidance", async ({

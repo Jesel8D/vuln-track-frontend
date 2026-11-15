@@ -3,16 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Globe2, Plus, ShieldCheck } from "lucide-react";
 import { useAuth } from "../auth/context";
 import { errorText } from "../../services/api";
-
-function authorizationLabel(status: string) {
-  return status === "approved"
-    ? "Autorización registrada"
-    : status === "rejected"
-      ? "Autorización rechazada"
-      : status === "expired"
-        ? "Autorización vencida"
-        : "Pendiente de autorización";
-}
+import {
+  targetAuthorizationLabel,
+  targetControlLabel,
+} from "./targetAuthorization";
+import type { ApplicationTarget } from "../../types/v2";
 
 export function ApplicationTargets({
   workspaceId,
@@ -32,6 +27,7 @@ export function ApplicationTargets({
   const [reference, setReference] = useState("");
   const [attested, setAttested] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [withdrawalReason, setWithdrawalReason] = useState("");
   const queryKey = ["v2", user?.id, workspaceId, applicationId, "targets"];
   const targets = useQuery({
     queryKey,
@@ -67,11 +63,32 @@ export function ApplicationTargets({
       setReference("");
       setAttested(false);
       setNotice(
-        "Autorización registrada. El análisis web aún no está habilitado.",
+        "Declaración registrada; el control del dominio sigue sin verificar. El análisis web permanece bloqueado.",
       );
       await refresh();
     },
     onError: (error) => setNotice(errorText(error)),
+  });
+
+  const withdraw = useMutation({
+    mutationFn: (target: ApplicationTarget) =>
+      api.authorizeV2Target(workspaceId, applicationId, target.id, {
+        authorization_status: "rejected",
+        authorization_expires_at: null,
+        authorization_reference: withdrawalReason.trim(),
+        expected_updated_at: target.updated_at,
+      }),
+    onSuccess: async () => {
+      setWithdrawalReason("");
+      setNotice(
+        "Declaración retirada. El destino permanece registrado y no permite análisis.",
+      );
+      await refresh();
+    },
+    onError: async (error) => {
+      setNotice(errorText(error));
+      await refresh();
+    },
   });
 
   return (
@@ -110,8 +127,9 @@ export function ApplicationTargets({
                 <span
                   className={`v2-status v2-status-${target.authorization_status}`}
                 >
-                  {authorizationLabel(target.authorization_status)}
+                  {targetAuthorizationLabel(target.authorization_status)}
                 </span>
+                <small>{targetControlLabel(target)}</small>
                 {target.authorization_status === "approved" &&
                   target.authorization_expires_at && (
                     <small>
@@ -128,7 +146,7 @@ export function ApplicationTargets({
               {canWrite && target.authorization_status !== "approved" && (
                 <details className="v2-target-authorization">
                   <summary onClick={() => setSelectedTarget(target.id)}>
-                    <ShieldCheck size={14} /> Registrar autorización
+                    <ShieldCheck size={14} /> Registrar declaración
                   </summary>
                   {selectedTarget === target.id && (
                     <form
@@ -172,6 +190,10 @@ export function ApplicationTargets({
                         Confirmo que soy propietario o tengo autorización
                         explícita para este destino.
                       </label>
+                      <p className="v2-analysis-help">
+                        Esta declaración no es una prueba técnica de control del
+                        dominio.
+                      </p>
                       <button
                         className="v2-secondary-button"
                         disabled={
@@ -183,10 +205,40 @@ export function ApplicationTargets({
                       >
                         {authorize.isPending
                           ? "Guardando…"
-                          : "Confirmar autorización"}
+                          : "Guardar declaración"}
                       </button>
                     </form>
                   )}
+                </details>
+              )}
+              {canWrite && target.authorization_status === "approved" && (
+                <details className="v2-target-authorization">
+                  <summary>Retirar declaración</summary>
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      withdraw.mutate(target);
+                    }}
+                  >
+                    <label>
+                      Motivo de retirada
+                      <input
+                        required
+                        minLength={1}
+                        maxLength={500}
+                        value={withdrawalReason}
+                        onChange={(event) =>
+                          setWithdrawalReason(event.target.value)
+                        }
+                      />
+                    </label>
+                    <button
+                      className="v2-secondary-button"
+                      disabled={withdraw.isPending || !withdrawalReason.trim()}
+                    >
+                      Confirmar retirada
+                    </button>
+                  </form>
                 </details>
               )}
             </article>
@@ -240,9 +292,9 @@ export function ApplicationTargets({
         </p>
       )}
       <p className="v2-target-disclaimer">
-        El estado de autorización es una declaración registrada por el usuario.
-        ZAP permanece deshabilitado hasta integrar validaciones de destino y
-        controles contra SSRF.
+        El estado de autorización es una declaración registrada por el usuario,
+        sin verificación técnica de control. Registrar o retirar una declaración
+        no envía solicitudes al destino. ZAP sigue bloqueado.
       </p>
     </section>
   );

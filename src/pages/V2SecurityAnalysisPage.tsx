@@ -1,8 +1,7 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  CheckCircle2,
   Clock3,
   ExternalLink,
   LockKeyhole,
@@ -13,6 +12,10 @@ import {
 import { useAuth } from "../features/auth/context";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
 import type { WorkspaceTarget } from "../types/v2";
+import {
+  targetAuthorizationLabel,
+  targetControlLabel,
+} from "../features/v2/targetAuthorization";
 
 function formatExpiry(value: string | null) {
   if (!value) return "Vigencia no registrada";
@@ -31,16 +34,8 @@ export function V2SecurityAnalysisPage() {
     enabled: Boolean(selectedId),
     staleTime: 30_000,
   });
-  const authorizedTargets = useMemo(
-    () =>
-      (targetsQuery.data?.items ?? []).filter(
-        (target) =>
-          target.authorization_status === "approved" &&
-          target.application_status === "active",
-      ),
-    [targetsQuery.data],
-  );
-  const selectedTarget: WorkspaceTarget | undefined = authorizedTargets.find(
+  const registeredTargets = targetsQuery.data?.items ?? [];
+  const selectedTarget: WorkspaceTarget | undefined = registeredTargets.find(
     (target) => target.id === targetId,
   );
 
@@ -55,7 +50,7 @@ export function V2SecurityAnalysisPage() {
             <span>Ejecutor de análisis de seguridad</span>
             <strong>OWASP ZAP BASELINE</strong>
           </div>
-          <h1>Análisis web autorizado</h1>
+          <h1>Preparación del análisis web</h1>
           <p>El backend aún no tiene habilitada la ejecución de ZAP.</p>
         </div>
         <span className="v2-zap-status-pill">
@@ -70,9 +65,10 @@ export function V2SecurityAnalysisPage() {
         <div>
           <h2>OWASP ZAP Baseline Scan</h2>
           <p>
-            Perfil pasivo para revisar respuestas y configuración HTTP de una
-            aplicación web autorizada. No es un análisis de aplicaciones móviles
-            nativas ni garantiza detectar todas las vulnerabilidades.
+            Baseline rastrea la aplicación y analiza pasivamente sus respuestas.
+            Genera tráfico y puede afectar al destino. Requiere permiso
+            verificable y aislamiento antes de ejecutarse; no garantiza detectar
+            todas las vulnerabilidades.
           </p>
         </div>
         <a
@@ -90,23 +86,23 @@ export function V2SecurityAnalysisPage() {
           <div className="v2-panel-heading">
             <div>
               <span className="v2-eyebrow">OBJETIVO DEL ANÁLISIS</span>
-              <h2>Selecciona una URL autorizada</h2>
+              <h2>Revisa un destino registrado</h2>
               <p>Workspace: {current?.name ?? "Cargando…"}</p>
             </div>
             <span className="v2-zap-step">PASO 1 DE 2</span>
           </div>
 
           {targetsQuery.isPending ? (
-            <p className="v2-zap-empty">Cargando destinos autorizados…</p>
+            <p className="v2-zap-empty">Cargando destinos registrados…</p>
           ) : targetsQuery.isError ? (
             <p className="v2-zap-empty" role="alert">
               No pudimos consultar los destinos del workspace.
             </p>
-          ) : authorizedTargets.length === 0 ? (
+          ) : registeredTargets.length === 0 ? (
             <p className="v2-zap-empty">
-              Este workspace no tiene URLs activas con autorización vigente.
-              Registra el destino y documenta su autorización desde la
-              aplicación correspondiente.
+              Este workspace no tiene destinos registrados. Registrar una URL y
+              declarar una autorización no acredita el control técnico del
+              dominio.
             </p>
           ) : (
             <label className="v2-zap-target-select">
@@ -116,9 +112,10 @@ export function V2SecurityAnalysisPage() {
                 onChange={(event) => setTargetId(event.target.value)}
               >
                 <option value="">Selecciona un destino</option>
-                {authorizedTargets.map((target) => (
+                {registeredTargets.map((target) => (
                   <option key={target.id} value={target.id}>
-                    {target.application_name} — {target.url}
+                    {target.application_name} — {target.url} —{" "}
+                    {targetAuthorizationLabel(target.authorization_status)}
                   </option>
                 ))}
               </select>
@@ -133,16 +130,18 @@ export function V2SecurityAnalysisPage() {
             <div>
               <span>DESTINO WEB</span>
               <strong className="v2-zap-url">
-                {selectedTarget?.url ?? "Elige una URL autorizada"}
+                {selectedTarget?.url ?? "Elige un destino registrado"}
               </strong>
             </div>
             <div>
-              <span>AUTORIZACIÓN</span>
+              <span>DECLARACIÓN REGISTRADA</span>
               <strong>
                 {selectedTarget ? (
                   <>
-                    <CheckCircle2 size={15} aria-hidden="true" />{" "}
-                    {formatExpiry(selectedTarget.authorization_expires_at)}
+                    {targetAuthorizationLabel(
+                      selectedTarget.authorization_status,
+                    )}{" "}
+                    · {formatExpiry(selectedTarget.authorization_expires_at)}
                   </>
                 ) : (
                   "No seleccionada"
@@ -150,6 +149,16 @@ export function V2SecurityAnalysisPage() {
               </strong>
             </div>
           </div>
+
+          {selectedTarget && (
+            <p className="v2-analysis-help" role="status">
+              {targetControlLabel(selectedTarget)}.{" "}
+              {selectedTarget.application_status === "archived" &&
+                "Aplicación archivada. "}
+              La verificación remota aún no está disponible. La ejecución
+              permanece bloqueada.
+            </p>
+          )}
 
           <div className="v2-zap-profile-grid">
             <div>
@@ -205,8 +214,9 @@ export function V2SecurityAnalysisPage() {
               <AlertTriangle size={24} aria-hidden="true" />
               <strong>La ejecución todavía no está habilitada</strong>
               <p>
-                Falta aprobar y verificar el aislamiento del proceso, la lista
-                permitida y la validación de DNS, redirecciones y conexiones.
+                Faltan verificación de control, un transporte que conecte a la
+                IP validada conservando TLS, y aislamiento de red independiente.
+                Una declaración vigente no habilita análisis.
               </p>
             </div>
           </div>

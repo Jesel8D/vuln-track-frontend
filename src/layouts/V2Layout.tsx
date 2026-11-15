@@ -69,7 +69,7 @@ function LayoutContent() {
         Saltar al contenido
       </a>
       <aside className="v2-sidebar">
-        <NavLink to="/" className="v2-brand" aria-label="VulnTrack, Dashboard">
+        <NavLink to="/" className="v2-brand" title="Dashboard">
           <Brand />
         </NavLink>
         <div className="v2-workspace-label">WORKSPACE</div>
