@@ -305,8 +305,11 @@ test("security preparation uses real declarations and stays blocked on desktop a
     select.getByRole("option", { name: /rechazada o retirada/ }),
   ).toHaveCount(1);
   await select.selectOption(targets[1].id);
+  await expect(
+    page.getByText("Pendiente de verificación técnica"),
+  ).toBeVisible();
   await expect(page.getByRole("status")).toContainText(
-    "Control del destino sin verificar",
+    "Declarar la propiedad no prueba el control del dominio",
   );
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });

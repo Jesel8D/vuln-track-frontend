@@ -148,15 +148,23 @@ export function V2SecurityAnalysisPage() {
                 )}
               </strong>
             </div>
+            <div>
+              <span>VERIFICACIÓN TÉCNICA</span>
+              <strong>
+                {selectedTarget
+                  ? targetControlLabel(selectedTarget)
+                  : "No seleccionada"}
+              </strong>
+            </div>
           </div>
 
           {selectedTarget && (
             <p className="v2-analysis-help" role="status">
-              {targetControlLabel(selectedTarget)}.{" "}
               {selectedTarget.application_status === "archived" &&
                 "Aplicación archivada. "}
-              La verificación remota aún no está disponible. La ejecución
-              permanece bloqueada.
+              Declarar la propiedad no prueba el control del dominio. La
+              verificación remota aún no está disponible. Ningún destino es
+              elegible para análisis en esta fase.
             </p>
           )}
 
@@ -167,7 +175,7 @@ export function V2SecurityAnalysisPage() {
             </div>
             <div>
               <span>EJECUCIÓN</span>
-              <strong>Pendiente de controles del backend</strong>
+              <strong>No elegible para análisis</strong>
             </div>
           </div>
 
@@ -214,9 +222,9 @@ export function V2SecurityAnalysisPage() {
               <AlertTriangle size={24} aria-hidden="true" />
               <strong>La ejecución todavía no está habilitada</strong>
               <p>
-                Faltan verificación de control, un transporte que conecte a la
-                IP validada conservando TLS, y aislamiento de red independiente.
-                Una declaración vigente no habilita análisis.
+                La verificación de control y el aislamiento de red aún no están
+                integrados en el servicio. Una declaración vigente no habilita
+                análisis. Las pruebas de laboratorio no autorizan ejecuciones.
               </p>
             </div>
           </div>

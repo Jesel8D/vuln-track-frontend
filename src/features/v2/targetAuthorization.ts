@@ -16,5 +16,14 @@ export function targetControlLabel(target: ApplicationTarget) {
     return "URL fuera de la política pública";
   if (target.analysis_readiness.control_verified)
     return "Control verificado; ejecución bloqueada";
-  return "Control del destino sin verificar";
+  return {
+    registered: "Control del destino sin verificar",
+    requested: "Verificación técnica solicitada",
+    verification_pending: "Pendiente de verificación técnica",
+    verified: "Datos de verificación incompletos",
+    rejected: "Declaración rechazada o retirada; control sin verificar",
+    revoked: "Verificación técnica revocada",
+    expired: "Autorización expirada; análisis no elegible",
+    incomplete: "Datos de autorización incompletos",
+  }[target.analysis_readiness.authorization_state];
 }
