@@ -1,5 +1,10 @@
 # VulnTrack · Web MVP-B
 
+Fase 2B: [desafíos persistentes y estados reales](docs/V2_SECURITY_PHASE2B.md).
+Esta rama se revisa con Backend `feat/v2-security-analysis-phase2b` y SQL008 de
+Database `feat/v2-security-verification-database`. La verificación remota y ZAP
+siguen bloqueados; no se despliega sobre la instalación personal.
+
 La rama `feat/v2-security-analysis-web-phase2a` se revisa con Backend
 `feat/v2-security-analysis-phase2a` y Database V2 compatible `b377b5b`.
 La API entrega `analysis_readiness`; ante una respuesta incompleta el cliente

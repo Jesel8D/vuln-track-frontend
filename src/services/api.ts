@@ -35,6 +35,12 @@ import {
   isWorkspaceCreated,
   isWorkspaceList,
 } from "./v2Contract";
+import {
+  isVerificationChallenge,
+  isVerificationIssue,
+  isVerificationList,
+  verificationScope,
+} from "./verificationContract";
 
 export class ApiError extends Error {
   constructor(
@@ -599,6 +605,57 @@ export class ApiClient {
       `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/targets`,
       isApplicationTargetList,
       { signal },
+    );
+  }
+  v2Verifications(
+    workspaceId: string,
+    applicationId: string,
+    targetId: string,
+    signal?: AbortSignal,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/targets/${encodeURIComponent(targetId)}/verifications`,
+      (v): v is import("../types/verification").VerificationList =>
+        isVerificationList(v) &&
+        v.items.every((x) =>
+          verificationScope(x, workspaceId, applicationId, targetId),
+        ),
+      { signal },
+    );
+  }
+  issueV2Verification(
+    workspaceId: string,
+    applicationId: string,
+    targetId: string,
+    expectedUpdatedAt: string,
+    key: string,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/targets/${encodeURIComponent(targetId)}/verifications`,
+      (v): v is import("../types/verification").VerificationIssue =>
+        isVerificationIssue(v) &&
+        verificationScope(v.challenge, workspaceId, applicationId, targetId),
+      {
+        method: "POST",
+        body: { expected_updated_at: expectedUpdatedAt },
+        key,
+      },
+    );
+  }
+  revokeV2Verification(
+    workspaceId: string,
+    applicationId: string,
+    targetId: string,
+    challengeId: string,
+    version: number,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/targets/${encodeURIComponent(targetId)}/verifications/${encodeURIComponent(challengeId)}/revoke`,
+      (v): v is import("../types/verification").VerificationChallenge =>
+        isVerificationChallenge(v) &&
+        verificationScope(v, workspaceId, applicationId, targetId) &&
+        v.id === challengeId,
+      { method: "POST", body: { expected_version: version } },
     );
   }
   v2WorkspaceTargets(workspaceId: string, signal?: AbortSignal) {
