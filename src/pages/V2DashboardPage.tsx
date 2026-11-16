@@ -226,6 +226,7 @@ function AnalysisTrend({ data }: { data: V2Dashboard }) {
             <span key={point.month}>
               {new Date(point.month).toLocaleDateString("es-MX", {
                 month: "short",
+                timeZone: "UTC",
               })}
               <strong>{point.analyses}</strong>
             </span>
@@ -244,6 +245,7 @@ export function V2DashboardPage() {
     queryKey: ["v2", user?.id, current?.workspace_id, "dashboard"],
     queryFn: ({ signal }) => api.v2Dashboard(current!.workspace_id, signal),
     enabled: Boolean(current),
+    refetchOnMount: "always",
     refetchInterval: 30_000,
   });
 

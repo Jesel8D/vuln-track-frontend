@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Brand } from "../components/ui";
 import { useAuth } from "../features/auth/context";
+import { FixtureNotice } from "../features/v2/FixtureNotice";
 import {
   WorkspaceProvider,
   useWorkspace,
@@ -68,7 +69,7 @@ function LayoutContent() {
       <a className="v2-skip-link" href="#main-content">
         Saltar al contenido
       </a>
-      <aside className="v2-sidebar">
+      <aside className="v2-sidebar" aria-label="Workspace y navegación">
         <NavLink to="/" className="v2-brand" title="Dashboard">
           <Brand />
         </NavLink>
@@ -169,6 +170,7 @@ function LayoutContent() {
         </header>
         {menuOpen && <div className="v2-mobile-nav">{navigation}</div>}
         <main id="main-content" tabIndex={-1} className="v2-main-content">
+          <FixtureNotice />
           <Outlet />
         </main>
         <footer className="v2-footer">

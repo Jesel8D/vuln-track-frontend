@@ -397,7 +397,7 @@ export function V2CveAnalysis({
       <div className="v2-cve-analysis-heading">
         <div>
           <p className="v2-eyebrow">CONSULTA DE VULNERABILIDADES</p>
-          <h4>CVEs en NVD</h4>
+          <h3>CVEs en NVD</h3>
           <p>
             {selectedCpe ? <code>{selectedCpe}</code> : "Sin CPE seleccionado"}
           </p>

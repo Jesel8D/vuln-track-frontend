@@ -288,6 +288,7 @@
 }
 .v2-page {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   max-width: 1500px;
   margin: 0 auto;
@@ -319,13 +320,14 @@
 .v2-security-copy h1 {
   margin: 7px 0 3px;
   font-size: 23px;
+  overflow-wrap: anywhere;
 }
 .v2-security-copy > p:last-child {
   color: var(--secondary);
   font-size: 13px;
 }
 .v2-eyebrow {
-  color: #69768a;
+  color: #53647a;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.8px;
@@ -502,7 +504,7 @@
 }
 .v2-table th {
   padding: 11px 10px;
-  color: #647187;
+  color: #53647a;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -529,7 +531,7 @@
   max-width: 300px;
   overflow: hidden;
   margin-top: 3px;
-  color: #8692a4;
+  color: #53647a;
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -554,7 +556,7 @@
   color: #536a89;
 }
 .v2-application-targets-cell small {
-  color: #748198;
+  color: #53647a;
   font-size: 10px;
 }
 .v2-status {
@@ -565,7 +567,7 @@
   font-weight: 600;
 }
 .v2-status-active {
-  color: #087d71;
+  color: #06645a;
   background: #def7f2;
 }
 .v2-status-info {
@@ -580,7 +582,7 @@
   margin-top: 13px;
   padding-top: 12px;
   border-top: 1px solid #edf0f5;
-  color: #7c8797;
+  color: #53647a;
   font-size: 11px;
   line-height: 1.45;
 }
@@ -1195,6 +1197,9 @@
   .v2-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .v2-security-banner {
+    flex-wrap: wrap;
+  }
   .v2-dashboard-grid {
     grid-template-columns: 1fr;
   }
@@ -1337,7 +1342,7 @@
   justify-content: space-between;
   gap: 12px;
 }
-.v2-cve-analysis-heading h4 {
+.v2-cve-analysis-heading h3 {
   margin: 4px 0 3px;
   color: #253950;
   font-size: 14px;
@@ -1353,7 +1358,7 @@
 }
 .v2-analysis-help {
   margin: 10px 0 0;
-  color: #738198;
+  color: #53647a;
   font-size: 10px;
   line-height: 1.45;
 }
@@ -1762,7 +1767,7 @@
   align-items: center;
   gap: 10px;
   margin: 0 0 16px;
-  color: #647187;
+  color: #53647a;
   font-size: 12px;
 }
 .v2-history-application-picker select {
@@ -1805,7 +1810,7 @@
   background: #e4edfc;
 }
 .v2-status-completed {
-  color: #087d71;
+  color: #06645a;
   background: #def7f2;
 }
 .v2-status-failed {
@@ -1817,7 +1822,7 @@
   background: #fff0cf;
 }
 .v2-status-fixed {
-  color: #087d71;
+  color: #06645a;
   background: #def7f2;
 }
 .v2-status-accepted_risk {
@@ -1851,7 +1856,7 @@
 }
 .v2-review-saved {
   margin: 10px 0;
-  color: #087d71;
+  color: #06645a;
   font-size: 12px;
   font-weight: 600;
 }
@@ -1881,7 +1886,7 @@
   align-items: center;
   gap: 4px;
   margin-left: auto;
-  color: #087d71;
+  color: #06645a;
   font-weight: 600;
 }
 .v2-severity-bar {
@@ -1955,7 +1960,7 @@
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 6px;
-  color: #738097;
+  color: #53647a;
   font-size: 10px;
   text-align: center;
   text-transform: capitalize;
@@ -1998,7 +2003,7 @@
   font-weight: 600;
 }
 .v2-dashboard-footnote {
-  color: #77849a;
+  color: #53647a;
   font-size: 11px;
   line-height: 1.5;
 }
@@ -2083,7 +2088,7 @@
   justify-self: start;
 }
 .v2-status-approved {
-  color: #087d71;
+  color: #06645a;
   background: #def7f2;
 }
 .v2-status-rejected,
@@ -2125,7 +2130,7 @@
   font-weight: 600;
 }
 .v2-target-main > small {
-  color: #748198;
+  color: #53647a;
   font-size: 11px;
   overflow-wrap: anywhere;
 }
@@ -2180,7 +2185,7 @@
 }
 .v2-target-disclaimer {
   margin-top: 12px;
-  color: #7c8798;
+  color: #53647a;
   font-size: 11px;
   line-height: 1.5;
 }
@@ -2251,7 +2256,7 @@
   font-size: 14px;
 }
 .v2-technology-name > span {
-  color: #77859a;
+  color: #53647a;
   font-size: 11px;
 }
 .v2-technology-name code {
@@ -2267,7 +2272,7 @@
   justify-content: space-between;
   gap: 10px;
   margin: 13px 0 0 49px;
-  color: #7f8b9d;
+  color: #53647a;
   font-size: 10px;
 }
 .v2-selected-cpe {
@@ -2323,7 +2328,7 @@
 }
 .v2-candidate-source {
   margin-bottom: 8px;
-  color: #77859a;
+  color: #53647a;
   font-size: 10px;
 }
 .v2-candidate-list {
@@ -2386,7 +2391,7 @@
   font-size: 10px;
 }
 .v2-candidate-mark {
-  color: #718095;
+  color: #53647a;
   font-size: 10px;
   white-space: nowrap;
 }
@@ -2400,7 +2405,7 @@
 .v2-confirm-cpe-row p,
 .v2-cpe-disclaimer,
 .v2-readonly-note {
-  color: #728096;
+  color: #53647a;
   font-size: 10px;
   line-height: 1.5;
 }
@@ -2460,7 +2465,7 @@
 }
 .v2-form-help {
   margin-top: 2px;
-  color: #728096;
+  color: #53647a;
   font-size: 11px;
 }
 @media (max-width: 760px) {
@@ -2577,4 +2582,19 @@
   font: inherit;
   overflow-wrap: anywhere;
   resize: vertical;
+}
+.v2-fixture-notice {
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #a7cfce;
+  border-radius: 0.6rem;
+  background: #eef8f7;
+  color: #173e49;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.v2-fixture-notice p {
+  margin: 0.3rem 0 0;
+  line-height: 1.5;
 }

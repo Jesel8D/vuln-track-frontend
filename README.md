@@ -1,5 +1,12 @@
 # VulnTrack · Web MVP-B
 
+RC1 actual: [aceptación y límites de la interfaz V2](docs/V2_RC1_WEB_ACCEPTANCE.md).
+Rama `release/v2-rc1-web`, Backend `release/v2-rc1-integration`, Database
+`a562e638dfe5b7e8d07eec0e8046e6998f8a2802`. La instalación separada usa web5177,
+API8004 y NVD fixture visible. No usar las instrucciones históricas MVP-B de
+abajo para inicializar RC1 ni actualizar la instalación personal. Backend incluye
+`docs/V2_RC1_LOCAL_RUN.md`, guion y resultados coordinados. ZAP sigue bloqueado.
+
 Fase 2B: [desafíos persistentes y estados reales](docs/V2_SECURITY_PHASE2B.md).
 Esta rama se revisa con Backend `feat/v2-security-analysis-phase2b` y SQL008 de
 Database `feat/v2-security-verification-database`. La verificación remota y ZAP
