@@ -6,6 +6,7 @@ dist/
 *.local
 *.tsbuildinfo
 test-results/
+test-results-rc1/
 playwright-report/
 __pycache__/
 *.pyc

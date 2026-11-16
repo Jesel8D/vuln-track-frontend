@@ -42,17 +42,17 @@ export function LoginPage() {
   }
   return (
     <div className="login-page">
-      <div className="login-story">
+      <aside className="login-story" aria-label="Presentación de VulnTrack">
         <Brand />
         <div className="story-content">
           <p className="eyebrow">CONOCE LO QUE PROTEGES</p>
-          <h1>
+          <h2 className="login-story-title">
             Todo empieza
             <br />
             por identificar
             <br />
             <span>bien tus activos.</span>
-          </h1>
+          </h2>
           <p className="story-description">
             Conecta tu inventario con el catálogo oficial CPE. Compara, confirma
             y conserva cada decisión.
@@ -92,14 +92,14 @@ export function LoginPage() {
         <p className="login-footnote">
           Registro manual. Selección humana. Evidencia conservada.
         </p>
-      </div>
+      </aside>
       <main className="login-form-area">
         <div className="login-form-wrap">
           <span className="login-kicker">
             <span className="scope-mark" />
             ACCESO PERSONAL
           </span>
-          <h2>Bienvenido a VulnTrack</h2>
+          <h1 className="login-title">Bienvenido a VulnTrack</h1>
           <p className="muted">Ingresa con tu cuenta para continuar.</p>
           {notice && (
             <div className="notice" role="status">
@@ -178,7 +178,7 @@ export function LoginPage() {
             </p>
           </div>
         </div>
-        <span className="login-version mono">VULNTRACK / WEB V1</span>
+        <span className="login-version mono">VULNTRACK / WEB V2</span>
       </main>
     </div>
   );

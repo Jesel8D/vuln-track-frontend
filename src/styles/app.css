@@ -1679,6 +1679,7 @@ code {
   margin-bottom: 24px;
 }
 .story-content h1,
+.story-content .login-story-title,
 .registration-page .story-content h2 {
   font-size: clamp(32px, 3.1vw, 48px);
   font-weight: 500;
@@ -1686,6 +1687,7 @@ code {
   letter-spacing: -1.5px;
 }
 .story-content h1 > span,
+.story-content .login-story-title > span,
 .registration-page .story-content h2 > span {
   color: var(--link);
 }
@@ -1764,6 +1766,7 @@ code {
   color: var(--faint);
 }
 .login-form-wrap h2,
+.login-form-wrap .login-title,
 .login-form-wrap .registration-title {
   font-size: 28px;
   font-weight: 500;
@@ -1984,7 +1987,8 @@ code {
   .login-story {
     padding: 32px;
   }
-  .story-content h1 {
+  .story-content h1,
+  .story-content .login-story-title {
     font-size: 34px;
   }
   .login-chain {
@@ -2345,7 +2349,8 @@ code {
   .login-form-wrap {
     max-width: 400px;
   }
-  .login-form-wrap h2 {
+  .login-form-wrap h2,
+  .login-form-wrap .login-title {
     font-size: 28px;
   }
   .login-version {
