@@ -11,6 +11,7 @@ import "@fontsource/ibm-plex-mono/latin-400.css";
 import "@fontsource/ibm-plex-mono/latin-500.css";
 import "./styles/app.css";
 import "./styles/v2.css";
+import "./styles/devices.css";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: false, staleTime: 30000, refetchOnWindowFocus: false },

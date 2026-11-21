@@ -1,0 +1,943 @@
+import { useState } from "react";
+import type { FormEvent } from "react";
+import { Link, useParams } from "react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../features/auth/context";
+import { useWorkspace } from "../features/v2/WorkspaceContext";
+import { errorText } from "../services/api";
+import type { CpeCandidateList } from "../types/v2";
+
+type DeviceType = "router" | "switch" | "server";
+type Mode = "fixture" | "live" | "unknown";
+type Identification = {
+  id: string;
+  cpe_name: string;
+  mode: Mode;
+  created_at: string;
+  reason: string;
+};
+type Device = {
+  id: string;
+  device_type: DeviceType;
+  manufacturer: string;
+  model: string;
+  product_vendor: string;
+  product: string;
+  component_kind: string;
+  version: string | null;
+  site_label: string;
+  inventory_label: string | null;
+  notes: string | null;
+  status: "active" | "retired";
+  created_at: string;
+  updated_at: string;
+  cpe_confirmed?: boolean;
+  current_identification?: Identification | null;
+};
+type Run = {
+  id: string;
+  mode: Mode;
+  status: "running" | "completed" | "failed";
+  selected_cpe: string;
+  coverage: "complete" | "partial" | null;
+  total_results: number | null;
+  retrieved_count: number;
+  stored_count: number;
+  created_at: string;
+  source_timestamp: string | null;
+  failure_code: string | null;
+  warning_codes: string[];
+};
+type Applicability = "potential" | "undetermined" | "not_applicable";
+type Finding = {
+  id: string;
+  title: string | null;
+  external_id: string;
+  severity: string;
+  status: "open" | "reviewed";
+  updated_at: string;
+  applicability: Applicability;
+  review_reason: string | null;
+  review_evidence: string | null;
+  published_at: string;
+  last_modified_at: string;
+  cvss: object | null;
+  evidence: object;
+};
+type Measure = { id: string; recommendation: string };
+type Page<T> = {
+  items: T[];
+  page: { total: number; offset: number; limit: number };
+};
+
+const types = { router: "Router", switch: "Switch", server: "Servidor" };
+const components = {
+  firmware: "Firmware",
+  os: "Sistema operativo",
+  software: "Software",
+  hardware: "Hardware",
+};
+const applicability = {
+  potential: "Potencial",
+  undetermined: "Indeterminada",
+  not_applicable: "No aplicable",
+};
+const stages = {
+  running: "En curso",
+  completed: "Completada",
+  failed: "Fallida",
+};
+const time = (value: string) => new Date(value).toLocaleString("es-MX");
+const base = (workspace: string) =>
+  "/api/v2/workspaces/" + encodeURIComponent(workspace) + "/devices";
+export const modeLabel = (mode?: string) =>
+  mode === "live"
+    ? "NVD en vivo"
+    : mode === "fixture"
+      ? "NVD de fixture"
+      : "Procedencia sin registrar";
+
+function Feedback({
+  pending,
+  error,
+  label = "Cargando…",
+}: {
+  pending?: boolean;
+  error?: unknown;
+  label?: string;
+}) {
+  if (error)
+    return (
+      <p role="alert" className="v2-error-panel">
+        {errorText(error)}
+      </p>
+    );
+  return pending ? <p role="status">{label}</p> : null;
+}
+
+function Pagination({
+  page,
+  onChange,
+}: {
+  page?: Page<unknown>["page"];
+  onChange: (offset: number) => void;
+}) {
+  if (!page || page.total <= page.limit) return null;
+  return (
+    <div className="rc2-actions">
+      <button
+        className="v2-secondary-button"
+        type="button"
+        disabled={page.offset === 0}
+        onClick={() => onChange(Math.max(0, page.offset - page.limit))}
+      >
+        Anterior
+      </button>
+      <span>
+        Página {1 + Math.floor(page.offset / page.limit)} de{" "}
+        {Math.ceil(page.total / page.limit)}
+      </span>
+      <button
+        className="v2-secondary-button"
+        type="button"
+        disabled={page.offset + page.limit >= page.total}
+        onClick={() => onChange(page.offset + page.limit)}
+      >
+        Siguiente
+      </button>
+    </div>
+  );
+}
+
+function DeviceForm({
+  workspace,
+  onCreated,
+}: {
+  workspace: string;
+  onCreated: () => void;
+}) {
+  const { api } = useAuth();
+  const create = useMutation({
+    mutationFn: (body: Record<string, string | null>) =>
+      api.request<Device>(base(workspace), { method: "POST", body }),
+    onSuccess: onCreated,
+  });
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const data = Object.fromEntries(
+      Array.from(form.entries(), ([key, value]) => [
+        key,
+        String(value).trim() || null,
+      ]),
+    );
+    create.mutate(data);
+  }
+  return (
+    <form onSubmit={submit} className="rc2-form">
+      <h2>Registrar dispositivo</h2>
+      <div className="rc2-fields">
+        <label>
+          Tipo de dispositivo
+          <select name="device_type">
+            {Object.entries(types).map(([id, name]) => (
+              <option key={id} value={id}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Fabricante del equipo
+          <input name="manufacturer" required maxLength={120} />
+        </label>
+        <label>
+          Modelo del equipo
+          <input name="model" required maxLength={120} />
+        </label>
+        <label>
+          Ubicación administrativa
+          <input name="site_label" required maxLength={120} />
+        </label>
+        <label>
+          Etiqueta de inventario
+          <input name="inventory_label" maxLength={120} />
+        </label>
+        <label>
+          Componente principal
+          <select name="component_kind">
+            {Object.entries(components).map(([id, name]) => (
+              <option key={id} value={id}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Fabricante del producto
+          <input name="product_vendor" required maxLength={120} />
+        </label>
+        <label>
+          Producto principal
+          <input name="product" required maxLength={160} />
+        </label>
+        <label>
+          Versión observada
+          <input
+            name="version"
+            maxLength={120}
+            placeholder="Dejar vacía si es desconocida"
+          />
+        </label>
+        <label>
+          Notas no sensibles
+          <textarea name="notes" maxLength={1000} />
+        </label>
+      </div>
+      <p>
+        El producto principal puede ser distinto del equipo físico. Usa el
+        nombre del producto que se pueda contrastar con el catálogo CPE.
+      </p>
+      <Feedback
+        pending={create.isPending}
+        error={create.error}
+        label="Guardando dispositivo…"
+      />
+      <button className="v2-primary-button" disabled={create.isPending}>
+        Guardar dispositivo
+      </button>
+    </form>
+  );
+}
+
+function Inventory({
+  workspace,
+  writer,
+}: {
+  workspace: string;
+  writer: boolean;
+}) {
+  const { api, user } = useAuth();
+  const [form, setForm] = useState(false);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("");
+  const [status, setStatus] = useState("");
+  const [offset, setOffset] = useState(0);
+  const list = useQuery({
+    queryKey: ["devices", user?.id, workspace, query, category, status, offset],
+    queryFn: ({ signal }) => {
+      const params = new URLSearchParams({ q: query, offset: String(offset) });
+      if (category) params.set("device_type", category);
+      if (status) params.set("status", status);
+      return api.request<Page<Device>>(base(workspace) + "?" + params, {
+        signal,
+      });
+    },
+  });
+  return (
+    <div className="v2-page">
+      <header className="rc2-heading">
+        <div>
+          <h1>Dispositivos</h1>
+          <p>Inventario de routers, switches y servidores del workspace.</p>
+        </div>
+        {writer && (
+          <button className="v2-primary-button" onClick={() => setForm(!form)}>
+            {form ? "Cerrar formulario" : "Registrar dispositivo"}
+          </button>
+        )}
+      </header>
+      {form && (
+        <section className="v2-panel rc2-panel">
+          <DeviceForm
+            workspace={workspace}
+            onCreated={() => {
+              setForm(false);
+              setOffset(0);
+              void list.refetch();
+            }}
+          />
+        </section>
+      )}
+      <section className="v2-panel rc2-panel">
+        <h2>Inventario de dispositivos</h2>
+        <div className="rc2-fields">
+          <label>
+            Buscar fabricante o modelo
+            <input
+              maxLength={120}
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setOffset(0);
+              }}
+            />
+          </label>
+          <label>
+            Tipo
+            <select
+              aria-label="Filtrar tipo de dispositivo"
+              value={category}
+              onChange={(event) => {
+                setCategory(event.target.value);
+                setOffset(0);
+              }}
+            >
+              <option value="">Todos</option>
+              {Object.entries(types).map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Estado
+            <select
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value);
+                setOffset(0);
+              }}
+            >
+              <option value="">Todos</option>
+              <option value="active">Activo</option>
+              <option value="retired">Retirado</option>
+            </select>
+          </label>
+        </div>
+        <Feedback pending={list.isPending} error={list.error} />
+        {list.isError && (
+          <button
+            className="v2-secondary-button"
+            onClick={() => void list.refetch()}
+          >
+            Reintentar
+          </button>
+        )}
+        {list.data?.items.length === 0 && (
+          <p>No hay dispositivos con estos filtros.</p>
+        )}
+        {!!list.data?.items.length && (
+          <div
+            className="v2-table-wrap"
+            tabIndex={0}
+            role="region"
+            aria-label="Tabla de dispositivos"
+          >
+            <table className="v2-table">
+              <thead>
+                <tr>
+                  <th scope="col">Equipo</th>
+                  <th scope="col">Tipo</th>
+                  <th scope="col">Versión</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col">CPE</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.data.items.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <Link to={"/dispositivos/" + item.id}>
+                        {item.manufacturer} {item.model}
+                      </Link>
+                    </td>
+                    <td>{types[item.device_type]}</td>
+                    <td>{item.version ?? "Desconocida"}</td>
+                    <td>{item.status === "active" ? "Activo" : "Retirado"}</td>
+                    <td>{item.cpe_confirmed ? "Confirmado" : "Pendiente"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <Pagination page={list.data?.page} onChange={setOffset} />
+      </section>
+    </div>
+  );
+}
+
+function DeviceFindings({
+  path,
+  run,
+  writer,
+}: {
+  path: string;
+  run: Run;
+  writer: boolean;
+}) {
+  const { api, user } = useAuth();
+  const query = useQuery({
+    queryKey: ["device-findings", user?.id, path, run.id],
+    queryFn: ({ signal }) =>
+      api.request<Page<Finding>>(
+        path + "/analyses/" + run.id + "/findings?limit=100",
+        { signal },
+      ),
+  });
+  return (
+    <div className="rc2-section">
+      <h3>Hallazgos de la consulta</h3>
+      <Feedback pending={query.isPending} error={query.error} />
+      {query.data?.items.length === 0 && (
+        <p>No se guardaron hallazgos en esta consulta.</p>
+      )}
+      {query.data?.items.map((finding) => (
+        <FindingCard
+          key={finding.id}
+          path={path}
+          finding={finding}
+          writer={writer}
+          onReview={() => void query.refetch()}
+        />
+      ))}
+    </div>
+  );
+}
+
+function FindingCard({
+  path,
+  finding,
+  writer,
+  onReview,
+}: {
+  path: string;
+  finding: Finding;
+  writer: boolean;
+  onReview: () => void;
+}) {
+  const { api, user } = useAuth();
+  const location = path + "/findings/" + finding.id;
+  const [showMeasures, setShowMeasures] = useState(false);
+  const [measureOffset, setMeasureOffset] = useState(0);
+  const measures = useQuery({
+    queryKey: ["device-measures", user?.id, location, measureOffset],
+    enabled: showMeasures,
+    queryFn: ({ signal }) =>
+      api.request<Page<Measure>>(
+        location + "/recommendations?offset=" + measureOffset,
+        { signal },
+      ),
+  });
+  const review = useMutation({
+    mutationFn: (body: object) =>
+      api.request(location, { method: "PATCH", body }),
+    onSuccess: onReview,
+  });
+  const recommendation = useMutation({
+    mutationFn: (value: string) =>
+      api.request(location + "/recommendations", {
+        method: "POST",
+        body: { recommendation: value },
+        key: crypto.randomUUID(),
+      }),
+    onSuccess: () => {
+      setMeasureOffset(0);
+      void measures.refetch();
+    },
+  });
+  return (
+    <article className="v2-panel rc2-panel">
+      <h4>{finding.external_id}</h4>
+      <p>
+        {applicability[finding.applicability]} ·{" "}
+        {finding.status === "reviewed" ? "Revisado" : "Abierto"} · Severidad{" "}
+        {finding.severity}
+      </p>
+      <p>{finding.title}</p>
+      <p>
+        Publicado {time(finding.published_at)} · Modificado{" "}
+        {time(finding.last_modified_at)}
+      </p>
+      <details>
+        <summary>Evidencia y métricas NVD</summary>
+        <pre>
+          {JSON.stringify(
+            { evidencia: finding.evidence, cvss: finding.cvss },
+            null,
+            2,
+          )}
+        </pre>
+      </details>
+      {finding.review_reason && (
+        <p>
+          <strong>Motivo:</strong> {finding.review_reason}
+        </p>
+      )}
+      {finding.review_evidence && (
+        <p>
+          <strong>Evidencia de revisión:</strong> {finding.review_evidence}
+        </p>
+      )}
+      {writer && finding.status === "open" && (
+        <form
+          className="rc2-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const data = new FormData(event.currentTarget);
+            review.mutate({
+              ...Object.fromEntries(data),
+              expected_updated_at: finding.updated_at,
+            });
+          }}
+        >
+          <label>
+            Resultado de la revisión
+            <select name="applicability" defaultValue={finding.applicability}>
+              {Object.entries(applicability).map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Motivo de revisión
+            <input name="reason" required maxLength={500} />
+          </label>
+          <label>
+            Evidencia de revisión
+            <textarea name="evidence" required maxLength={2000} />
+          </label>
+          <Feedback pending={review.isPending} error={review.error} />
+          <button className="v2-secondary-button" disabled={review.isPending}>
+            Guardar revisión
+          </button>
+        </form>
+      )}
+      <details onToggle={(event) => setShowMeasures(event.currentTarget.open)}>
+        <summary>Medidas recomendadas</summary>
+        <div className="rc2-section">
+          <Feedback
+            pending={showMeasures && measures.isPending}
+            error={measures.error}
+          />
+          {measures.data?.items.length === 0 && (
+            <p>No hay medidas registradas.</p>
+          )}
+          <ul>
+            {measures.data?.items.map((item) => (
+              <li key={item.id}>{item.recommendation} · Pendiente</li>
+            ))}
+          </ul>
+          <Pagination page={measures.data?.page} onChange={setMeasureOffset} />
+          {writer && (
+            <form
+              className="rc2-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const form = event.currentTarget;
+                recommendation.mutate(
+                  String(new FormData(form).get("measure") ?? ""),
+                  { onSuccess: () => form.reset() },
+                );
+              }}
+            >
+              <label>
+                Medida recomendada
+                <textarea name="measure" required maxLength={4000} />
+              </label>
+              <Feedback
+                pending={recommendation.isPending}
+                error={recommendation.error}
+              />
+              <button
+                className="v2-secondary-button"
+                disabled={recommendation.isPending}
+              >
+                Agregar medida
+              </button>
+            </form>
+          )}
+        </div>
+      </details>
+    </article>
+  );
+}
+
+function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
+  const { api, user } = useAuth();
+  const cache = useQueryClient();
+  const [keyword, setKeyword] = useState("");
+  const [searched, setSearched] = useState("");
+  const [selection, setSelection] = useState("");
+  const [selectedRun, setSelectedRun] = useState("");
+  const [runOffset, setRunOffset] = useState(0);
+  const [identityOffset, setIdentityOffset] = useState(0);
+  const key = ["device", user?.id, path];
+  const detail = useQuery({
+    queryKey: key,
+    queryFn: ({ signal }) => api.request<Device>(path, { signal }),
+  });
+  const identities = useQuery({
+    queryKey: [...key, "identifications", identityOffset],
+    enabled: detail.isSuccess,
+    queryFn: ({ signal }) =>
+      api.request<Page<Identification>>(
+        path + "/identifications?offset=" + identityOffset,
+        { signal },
+      ),
+  });
+  const runs = useQuery({
+    queryKey: [...key, "analyses", runOffset],
+    enabled: detail.isSuccess,
+    queryFn: ({ signal }) =>
+      api.request<Page<Run>>(path + "/analyses?offset=" + runOffset, {
+        signal,
+      }),
+    refetchInterval: (state) =>
+      state.state.data?.items.some((item) => item.status === "running")
+        ? 2500
+        : false,
+  });
+  const search = useMutation({
+    mutationFn: ({ query, offset }: { query: string; offset: number }) =>
+      api.request<CpeCandidateList>(
+        path +
+          "/cpe-candidates?" +
+          new URLSearchParams({ query, offset: String(offset) }),
+      ),
+  });
+  const confirm = useMutation({
+    mutationFn: (reason: string) =>
+      api.request(path + "/identifications", {
+        method: "POST",
+        body: {
+          cpe_name_id: selection,
+          expected_identification_id:
+            detail.data?.current_identification?.id ?? null,
+          reason,
+        },
+      }),
+    onSuccess: () => {
+      setSelection("");
+      setIdentityOffset(0);
+      void cache.invalidateQueries({ queryKey: key });
+    },
+  });
+  const analyze = useMutation({
+    mutationFn: (requestKey: string) =>
+      api.request<Run>(path + "/analyses", { method: "POST", key: requestKey }),
+    onSuccess: (run) => {
+      setSelectedRun(run.id);
+      setRunOffset(0);
+      void runs.refetch();
+    },
+    onError: () => void runs.refetch(),
+  });
+  const status = useMutation({
+    mutationFn: (value: Device["status"]) =>
+      api.request(path + "/status", {
+        method: "PATCH",
+        body: { status: value },
+      }),
+    onSuccess: () => void detail.refetch(),
+  });
+  const row = detail.data;
+  if (!row)
+    return (
+      <div className="v2-page">
+        <Link to="/dispositivos">Volver a dispositivos</Link>
+        <h1>Detalle de dispositivo</h1>
+        <Feedback pending={detail.isPending} error={detail.error} />
+      </div>
+    );
+  const active = writer && row.status === "active";
+  const found = runs.data?.items.find((item) => item.id === selectedRun);
+  return (
+    <div className="v2-page">
+      <Link to="/dispositivos">Volver a dispositivos</Link>
+      <section className="v2-panel rc2-panel">
+        <h1>
+          {row.manufacturer} {row.model}
+        </h1>
+        <p>
+          {types[row.device_type]} ·{" "}
+          {row.status === "active" ? "Activo" : "Retirado"} · {row.site_label}
+        </p>
+        <p>
+          <strong>Producto principal:</strong> {row.product_vendor}{" "}
+          {row.product} ·{" "}
+          {components[row.component_kind as keyof typeof components]}
+        </p>
+        <p>
+          <strong>Versión observada:</strong> {row.version ?? "Desconocida"}
+        </p>
+        {row.inventory_label && <p>Inventario: {row.inventory_label}</p>}
+        {row.notes && <p>{row.notes}</p>}
+        <p>
+          Creado {time(row.created_at)} · Actualizado {time(row.updated_at)}
+        </p>
+        {writer && (
+          <button
+            className="v2-secondary-button"
+            disabled={status.isPending}
+            onClick={() =>
+              status.mutate(row.status === "active" ? "retired" : "active")
+            }
+          >
+            {row.status === "active"
+              ? "Retirar dispositivo"
+              : "Reactivar dispositivo"}
+          </button>
+        )}
+        <Feedback error={status.error} />
+      </section>
+      <section className="v2-panel rc2-panel">
+        <h2>Identificación CPE</h2>
+        {row.current_identification ? (
+          <p>
+            <strong>CPE vigente</strong>
+            <br />
+            <code>{row.current_identification.cpe_name}</code> ·{" "}
+            {modeLabel(row.current_identification.mode)}
+          </p>
+        ) : (
+          <p>No hay un CPE confirmado.</p>
+        )}
+        {!row.version && (
+          <p>
+            La versión es desconocida. Puedes consultar candidatos y contrastar
+            el producto. La confirmación y la consulta CVE requieren una versión
+            conocida.
+          </p>
+        )}
+        <form
+          className="rc2-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setSelection("");
+            setSearched(keyword);
+            search.mutate({ query: keyword, offset: 0 });
+          }}
+        >
+          <label>
+            Buscar candidatos CPE
+            <input
+              required
+              minLength={2}
+              maxLength={200}
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder={row.model}
+            />
+          </label>
+          <button className="v2-secondary-button" disabled={search.isPending}>
+            Buscar CPE
+          </button>
+        </form>
+        <Feedback pending={search.isPending} error={search.error} />
+        {search.isSuccess && (
+          <form
+            className="rc2-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              confirm.mutate(
+                String(new FormData(event.currentTarget).get("reason") ?? ""),
+              );
+            }}
+          >
+            <fieldset>
+              <legend>Candidatos oficiales</legend>
+              {search.data.items.length === 0 && (
+                <p>No se encontraron candidatos.</p>
+              )}
+              {search.data.items.map((item) => (
+                <label className="rc2-candidate" key={item.cpe_name_id}>
+                  <input
+                    type="radio"
+                    name="candidate"
+                    value={item.cpe_name_id}
+                    checked={selection === item.cpe_name_id}
+                    disabled={!active || !row.version || item.deprecated}
+                    onChange={() => setSelection(item.cpe_name_id)}
+                  />
+                  <span>
+                    <strong>{item.title ?? "Producto del catálogo"}</strong>
+                    {item.deprecated ? " · Deprecado" : ""}
+                    <br />
+                    <code>{item.cpe_name}</code>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+            <Pagination
+              page={search.data.page}
+              onChange={(offset) => {
+                setSelection("");
+                search.mutate({ query: searched, offset });
+              }}
+            />
+            {!!search.data.items.length && active && row.version && (
+              <>
+                <label>
+                  Motivo de confirmación
+                  <input name="reason" required maxLength={500} />
+                </label>
+                <button
+                  className="v2-secondary-button"
+                  disabled={!selection || confirm.isPending}
+                >
+                  Confirmar CPE
+                </button>
+              </>
+            )}
+            <Feedback pending={confirm.isPending} error={confirm.error} />
+          </form>
+        )}
+        <h3>Historial de identificaciones</h3>
+        <Feedback pending={identities.isPending} error={identities.error} />
+        {identities.data?.items.length === 0 && <p>Sin cambios registrados.</p>}
+        <ul>
+          {identities.data?.items.map((entry) => (
+            <li key={entry.id}>
+              {time(entry.created_at)} · {modeLabel(entry.mode)} ·{" "}
+              {entry.reason}
+              <br />
+              <code>{entry.cpe_name}</code>
+            </li>
+          ))}
+        </ul>
+        <Pagination page={identities.data?.page} onChange={setIdentityOffset} />
+      </section>
+      <section className="v2-panel rc2-panel">
+        <h2>Consultas CVE del dispositivo</h2>
+        <p>
+          La consulta usa el CPE confirmado. Los CVE relacionados requieren
+          evaluación humana.
+        </p>
+        {active && (
+          <button
+            className="v2-primary-button"
+            disabled={!row.current_identification || analyze.isPending}
+            onClick={() => analyze.mutate(crypto.randomUUID())}
+          >
+            Consultar CVE
+          </button>
+        )}
+        <Feedback
+          pending={analyze.isPending}
+          error={analyze.error}
+          label="Consultando el catálogo CVE…"
+        />
+        <h3>Historial de consultas</h3>
+        <Feedback pending={runs.isPending} error={runs.error} />
+        {runs.data?.items.length === 0 && <p>Sin consultas registradas.</p>}
+        <ul className="rc2-runs">
+          {runs.data?.items.map((entry) => (
+            <li key={entry.id}>
+              <strong>{stages[entry.status]}</strong> · {modeLabel(entry.mode)}{" "}
+              · {time(entry.created_at)}
+              <p>
+                Cobertura{" "}
+                {entry.coverage === "complete"
+                  ? "completa"
+                  : entry.coverage === "partial"
+                    ? "parcial"
+                    : "sin determinar"}
+                {" · "}
+                {entry.retrieved_count} recuperados de{" "}
+                {entry.total_results ?? "total desconocido"} ·{" "}
+                {entry.stored_count} guardados
+              </p>
+              <code>{entry.selected_cpe}</code>
+              {entry.failure_code && <p>Resultado: {entry.failure_code}</p>}
+              {!!entry.warning_codes.length && (
+                <p>Avisos: {entry.warning_codes.join(", ")}</p>
+              )}
+              <button
+                className="v2-text-button"
+                aria-expanded={selectedRun === entry.id}
+                onClick={() =>
+                  setSelectedRun(selectedRun === entry.id ? "" : entry.id)
+                }
+              >
+                Ver hallazgos
+              </button>
+            </li>
+          ))}
+        </ul>
+        <Pagination
+          page={runs.data?.page}
+          onChange={(value) => {
+            setSelectedRun("");
+            setRunOffset(value);
+          }}
+        />
+        {found && (
+          <DeviceFindings
+            key={found.id}
+            path={path}
+            run={found}
+            writer={writer}
+          />
+        )}
+      </section>
+    </div>
+  );
+}
+
+export function V2DevicesPage() {
+  const { current, isPending, error } = useWorkspace();
+  const { deviceId } = useParams();
+  if (!current)
+    return (
+      <div className="v2-page">
+        <h1>Dispositivos</h1>
+        <Feedback pending={isPending} error={error} />
+        {!isPending && !error && (
+          <p>Selecciona un workspace para abrir el inventario.</p>
+        )}
+      </div>
+    );
+  const workspace = current.workspace_id;
+  const writer = current.role === "owner" || current.role === "editor";
+  const path = base(workspace) + "/" + encodeURIComponent(deviceId ?? "");
+  return deviceId ? (
+    <DeviceDetail key={path} path={path} writer={writer} />
+  ) : (
+    <Inventory key={workspace} workspace={workspace} writer={writer} />
+  );
+}

@@ -7,6 +7,7 @@ import {
   LogOut,
   Menu,
   ScanLine,
+  Server,
   X,
 } from "lucide-react";
 import { Brand } from "../components/ui";
@@ -19,6 +20,7 @@ import {
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/dispositivos", label: "Dispositivos", icon: Server, end: false },
   { to: "/aplicaciones", label: "Aplicaciones", icon: Boxes, end: false },
   {
     to: "/analisis",

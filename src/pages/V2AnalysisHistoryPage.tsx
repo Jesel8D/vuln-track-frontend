@@ -201,6 +201,13 @@ export function V2AnalysisHistoryPage() {
                           {run.product} {run.version}
                         </strong>
                         <small>{run.id}</small>
+                        <small>
+                          {run.nvd_mode === "live"
+                            ? "NVD en vivo"
+                            : run.nvd_mode === "fixture"
+                              ? "NVD de fixture"
+                              : "Procedencia sin registrar"}
+                        </small>
                       </td>
                       <td>
                         {new Date(run.created_at).toLocaleString("es-MX")}

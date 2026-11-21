@@ -469,6 +469,13 @@ export function V2CveAnalysis({
       {run.data && (
         <div className="v2-run-summary">
           <div className="v2-run-status">
+            <small>
+              {run.data.nvd_mode === "live"
+                ? "NVD en vivo"
+                : run.data.nvd_mode === "fixture"
+                  ? "NVD de fixture"
+                  : "Procedencia sin registrar"}
+            </small>
             <span className={`v2-run-indicator ${run.data.status}`} />
             {run.data.status === "completed"
               ? run.data.coverage === "partial"

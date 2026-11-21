@@ -1,5 +1,17 @@
 export function FixtureNotice() {
-  if (import.meta.env.VITE_NVD_MODE !== "fixture") return null;
+  const mode = import.meta.env.VITE_NVD_MODE;
+  if (mode === "live")
+    return (
+      <div className="v2-fixture-notice" role="note" aria-label="Fuente NVD">
+        <strong>NVD en vivo</strong>
+        <p>
+          Las consultas bajo demanda usan el cat?logo oficial. Los resultados
+          previos conservan su procedencia. Los CVE relacionados requieren
+          revisi?n humana.
+        </p>
+      </div>
+    );
+  if (mode !== "fixture") return null;
   return (
     <div
       className="v2-fixture-notice"

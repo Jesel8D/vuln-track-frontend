@@ -240,10 +240,17 @@ function AnalysisTrend({ data }: { data: V2Dashboard }) {
 export function V2DashboardPage() {
   const { api, user } = useAuth();
   const { current, isPending, error } = useWorkspace();
+  const runtimeMode = import.meta.env.VITE_NVD_MODE;
+  const [mode, setMode] = useState<"fixture" | "live" | "unknown" | undefined>(
+    runtimeMode === "fixture" || runtimeMode === "live"
+      ? runtimeMode
+      : undefined,
+  );
   const canWrite = current?.role === "owner" || current?.role === "editor";
   const query = useQuery({
-    queryKey: ["v2", user?.id, current?.workspace_id, "dashboard"],
-    queryFn: ({ signal }) => api.v2Dashboard(current!.workspace_id, signal),
+    queryKey: ["v2", user?.id, current?.workspace_id, "dashboard", mode],
+    queryFn: ({ signal }) =>
+      api.v2Dashboard(current!.workspace_id, signal, mode),
     enabled: Boolean(current),
     refetchOnMount: "always",
     refetchInterval: 30_000,
@@ -269,6 +276,36 @@ export function V2DashboardPage() {
 
   return (
     <div className="v2-page">
+      {mode && (
+        <section
+          className="v2-panel rc2-panel"
+          aria-label="Alcance del dashboard"
+        >
+          <p>
+            Este resumen cubre aplicaciones web. El historial de dispositivos se
+            consulta en <Link to="/dispositivos">Dispositivos</Link>.
+          </p>
+          <label>
+            Procedencia de las consultas del dashboard
+            <select
+              value={mode}
+              onChange={(event) => {
+                const value = event.target.value;
+                if (
+                  value === "fixture" ||
+                  value === "live" ||
+                  value === "unknown"
+                )
+                  setMode(value);
+              }}
+            >
+              <option value="fixture">NVD de fixture</option>
+              <option value="live">NVD en vivo</option>
+              <option value="unknown">Procedencia sin registrar</option>
+            </select>
+          </label>
+        </section>
+      )}
       <section className="v2-security-banner">
         <div className="v2-security-icon">
           <ShieldCheck size={26} />

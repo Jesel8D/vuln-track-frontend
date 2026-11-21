@@ -7,6 +7,7 @@ import { RegisterPage } from "../pages/RegisterPage";
 import { AccountPage } from "../pages/AccountPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { V2Layout } from "../layouts/V2Layout";
+import { V2DevicesPage } from "../pages/V2DevicesPage";
 import { V2DashboardPage } from "../pages/V2DashboardPage";
 import { V2ApplicationsPage } from "../pages/V2ApplicationsPage";
 import { V2ApplicationPage } from "../pages/V2ApplicationPage";
@@ -33,6 +34,8 @@ export function App() {
       <Route element={<Protected />}>
         <Route element={<V2Layout />}>
           <Route index element={<V2DashboardPage />} />
+          <Route path="dispositivos" element={<V2DevicesPage />} />
+          <Route path="dispositivos/:deviceId" element={<V2DevicesPage />} />
           <Route path="aplicaciones" element={<V2ApplicationsPage />} />
           <Route path="analisis" element={<V2SecurityAnalysisPage />} />
           <Route
