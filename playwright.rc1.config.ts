@@ -7,7 +7,7 @@ if (!process.env.RC1_GUARD_FILE || !process.env.RC1_STATE_FILE) {
 const guard = JSON.parse(readFileSync(process.env.RC1_GUARD_FILE, "utf8"));
 if (
   typeof guard.profile !== "string" ||
-  !/^rc1(?:-restore(?:-[0-9a-f]{8})?)?$/.test(guard.profile) ||
+  !/^rc[12](?:-restore(?:-[0-9a-f]{8})?)?$/.test(guard.profile) ||
   guard.fixture !== true ||
   guard.volume !== `vulntrack_v2_${guard.profile.replaceAll("-", "_")}_pgdata`
 ) {
@@ -25,11 +25,16 @@ for (const value of [guard.api_url, guard.web_url]) {
   }
 }
 process.env.E2E_API_URL = guard.api_url;
+const rc2 = guard.profile.startsWith("rc2");
 export default defineConfig({
   testDir: "./tests/e2e/rc1",
   testMatch:
     process.env.RC1_PHASE === "create"
-      ? ["acceptance.spec.ts", "fault.spec.ts"]
+      ? [
+          "acceptance.spec.ts",
+          "fault.spec.ts",
+          ...(rc2 ? ["z-devices.spec.ts"] : []),
+        ]
       : "resume.spec.ts",
   fullyParallel: false,
   workers: 1,

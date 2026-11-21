@@ -1,0 +1,110 @@
+.rc2-heading,
+.rc2-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.rc2-heading h1,
+.rc2-panel h1 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.rc2-panel,
+.rc2-section,
+.rc2-form {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+}
+
+.rc2-panel {
+  padding: clamp(14px, 3vw, 24px);
+  overflow-wrap: anywhere;
+}
+
+.rc2-panel h2,
+.rc2-panel h3,
+.rc2-panel h4 {
+  font-weight: 650;
+}
+
+.rc2-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  min-width: 0;
+  gap: 12px;
+}
+
+.rc2-panel label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.rc2-panel input:not([type="radio"]),
+.rc2-panel select,
+.rc2-panel textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #8190a5;
+  border-radius: 6px;
+  background: white;
+  color: #13233a;
+  font-weight: 400;
+}
+
+.rc2-panel button {
+  justify-self: start;
+}
+
+.rc2-panel fieldset {
+  min-inline-size: 0;
+  padding: 10px;
+  border: 1px solid #dbe4f1;
+  border-radius: 6px;
+}
+
+.rc2-panel .rc2-candidate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  padding: 8px;
+}
+
+.rc2-candidate input {
+  margin-top: 5px;
+}
+
+.rc2-panel code,
+.rc2-panel pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.rc2-panel pre,
+.rc2-runs > li {
+  padding: 10px;
+  background: #f4f7fc;
+  border: 1px solid #dbe4f1;
+  border-radius: 6px;
+}
+
+.rc2-panel pre {
+  max-height: 22rem;
+  overflow: auto;
+}
+
+.rc2-panel summary {
+  cursor: pointer;
+}
+
+.rc2-runs {
+  display: grid;
+  gap: 8px;
+}

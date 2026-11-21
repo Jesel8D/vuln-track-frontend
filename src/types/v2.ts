@@ -79,6 +79,7 @@ export interface AnalysisAccepted {
 }
 
 export interface AnalysisRun extends AnalysisAccepted {
+  nvd_mode?: "fixture" | "live" | "unknown";
   status: V2AnalysisStatus;
   coverage: V2Coverage;
   total_results: number | null;

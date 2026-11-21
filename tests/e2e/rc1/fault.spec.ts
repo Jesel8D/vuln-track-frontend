@@ -20,7 +20,8 @@ test("E: loading, controlled network error and real dashboard retry", async ({
   const delayed = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const matcher = /\/api\/v2\/workspaces\/[^/]+\/dashboard$/;
+  const matcher =
+    /\/api\/v2\/workspaces\/[^/]+\/(?:dashboard|nvd-dashboard\/fixture)$/;
   await page.route(matcher, async (route) => {
     await delayed;
     await route.abort("connectionfailed");

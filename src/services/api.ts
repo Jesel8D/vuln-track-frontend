@@ -105,6 +105,9 @@ const messages: Record<string, string> = {
   TARGET_AUTHORIZATION_CONFLICT:
     "El destino cambió. Actualiza la vista antes de confirmar la autorización.",
   ANALYSIS_NOT_FOUND: "No encontramos esta consulta dentro de la aplicación.",
+  CPE_PRODUCT_MISMATCH:
+    "El fabricante, producto o tipo de componente no coincide con el candidato NVD.",
+  CPE_MODE_CHANGED: "Vuelve a confirmar el CPE en el modo NVD actual.",
   CPE_SELECTION_CHANGED:
     "La selección CPE cambió. Actualiza la tecnología antes de confirmarla.",
   CPE_CONFIRMATION_REQUIRED:
@@ -666,9 +669,13 @@ export class ApiClient {
       { signal },
     );
   }
-  v2Dashboard(workspaceId: string, signal?: AbortSignal) {
+  v2Dashboard(
+    workspaceId: string,
+    signal?: AbortSignal,
+    mode?: "fixture" | "live" | "unknown",
+  ) {
     return this.checked(
-      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/dashboard`,
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/${mode ? "nvd-dashboard/" + mode : "dashboard"}`,
       isV2Dashboard,
       { signal },
     );

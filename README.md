@@ -1,5 +1,10 @@
 # VulnTrack · Web MVP-B
 
+La rama experimental RC2 agrega Dispositivos al menú V2. Administra routers,
+switches y servidores dentro del workspace, con CPE humano e historial separado.
+Usar el launcher RC2 de Backend y Database con SQL009. Web RC2 usa 5179 y su
+API 8006. El dashboard de aplicaciones filtra consultas por procedencia.
+
 RC1 actual: [aceptación y límites de la interfaz V2](docs/V2_RC1_WEB_ACCEPTANCE.md).
 Rama `release/v2-rc1-web`, Backend `release/v2-rc1-integration`, Database
 `a562e638dfe5b7e8d07eec0e8046e6998f8a2802`. La instalación separada usa web5177,
