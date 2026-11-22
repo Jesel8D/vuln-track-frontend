@@ -3,7 +3,10 @@ import type { FormEvent } from "react";
 import { Link, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../features/auth/context";
-import { CpeCatalogFields } from "../features/devices/CpeCatalogFields";
+import {
+  CpeCatalogFields,
+  HardwareReference,
+} from "../features/devices/CpeCatalogFields";
 import type { CatalogCandidate } from "../features/devices/CpeCatalogFields";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
 import { errorText } from "../services/api";
@@ -160,6 +163,8 @@ function DeviceForm({
 }) {
   const { api } = useAuth();
   const [manual, setManual] = useState(false);
+  const [manufacturer, setManufacturer] = useState("");
+  const [model, setModel] = useState("");
   const [component, setComponent] =
     useState<keyof typeof components>("firmware");
   const [selection, setSelection] = useState<CatalogCandidate | null>(null);
@@ -231,11 +236,23 @@ function DeviceForm({
         </label>
         <label>
           Fabricante del equipo
-          <input name="manufacturer" required maxLength={120} />
+          <input
+            name="manufacturer"
+            required
+            maxLength={120}
+            value={manufacturer}
+            onChange={(event) => setManufacturer(event.target.value)}
+          />
         </label>
         <label>
           Modelo del equipo
-          <input name="model" required maxLength={120} />
+          <input
+            name="model"
+            required
+            maxLength={120}
+            value={model}
+            onChange={(event) => setModel(event.target.value)}
+          />
         </label>
         <label>
           Ubicación administrativa
@@ -267,6 +284,13 @@ function DeviceForm({
           <textarea name="notes" maxLength={1000} />
         </label>
       </div>
+      <HardwareReference
+        vendor={manufacturer}
+        onApply={(vendor, product) => {
+          setManufacturer(vendor);
+          setModel(product);
+        }}
+      />
       <p>
         Registra fabricante y modelo físicos según tu inventario. El catálogo
         identifica el componente evaluado.

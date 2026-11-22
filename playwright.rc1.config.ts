@@ -7,7 +7,7 @@ if (!process.env.RC1_GUARD_FILE || !process.env.RC1_STATE_FILE) {
 const guard = JSON.parse(readFileSync(process.env.RC1_GUARD_FILE, "utf8"));
 if (
   typeof guard.profile !== "string" ||
-  !/^(?:rc[12]|rc2-catalog)(?:-restore(?:-[0-9a-f]{8})?)?$/.test(
+  !/^(?:rc[12]|rc2-catalog(?:23)?)(?:-restore(?:-[0-9a-f]{8})?)?$/.test(
     guard.profile,
   ) ||
   guard.fixture !== true ||
@@ -36,7 +36,12 @@ export default defineConfig({
           "acceptance.spec.ts",
           "fault.spec.ts",
           ...(rc2 ? ["z-devices.spec.ts"] : []),
-          ...(guard.profile === "rc2-catalog" ? ["zz-catalog.spec.ts"] : []),
+          ...(guard.profile.startsWith("rc2-catalog")
+            ? ["zz-catalog.spec.ts"]
+            : []),
+          ...(guard.profile === "rc2-catalog23"
+            ? ["zzz-catalog-wide.spec.ts"]
+            : []),
         ]
       : "resume.spec.ts",
   fullyParallel: false,

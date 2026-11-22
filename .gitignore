@@ -10,3 +10,6 @@ test-results-rc1/
 playwright-report/
 __pycache__/
 *.pyc
+
+# Volatile RC2.3 dependency link
+/node_modules
