@@ -29,6 +29,7 @@ test("RC2.2 local catalog, keyboard, atomic confirmation, fixture review and man
     await page
       .getByRole("button", { name: "Registrar dispositivo", exact: true })
       .click();
+    await page.getByRole("button", { name: "No encuentro mi equipo" }).click();
     await page.getByLabel("Fabricante del equipo").fill("Cisco");
     await page.getByLabel("Modelo del equipo").fill(model);
     await page.getByLabel(/administrativa$/).fill("Laboratorio RC2.2");

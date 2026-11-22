@@ -43,6 +43,7 @@ test("RC2 device registration, CPE, CVE, review, history and four viewports", as
     await page
       .getByRole("combobox", { name: "Tipo de dispositivo", exact: true })
       .selectOption(type);
+    await page.getByRole("button", { name: "No encuentro mi equipo" }).click();
     await page.getByLabel("Fabricante del equipo").fill(maker);
     await page.getByLabel("Modelo del equipo").fill(model);
     await page

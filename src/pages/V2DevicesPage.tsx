@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -178,9 +178,15 @@ function DeviceForm({
   const { api } = useAuth();
   const [manual, setManual] = useState(false);
   const [deviceType, setDeviceType] = useState<DeviceType>("router");
-  const [manufacturer, setManufacturer] = useState("");
+  const [hardware, setHardware] = useState({ vendor: "", model: "" });
+  const [manualHardware, setManualHardware] = useState<typeof hardware | null>(
+    null,
+  );
+  const [manualPhysical, setManualPhysical] = useState(false);
   const manufacturerInput = useRef<HTMLInputElement>(null);
-  const [model, setModel] = useState("");
+  const { vendor: manufacturer, model } =
+    (manualPhysical ? manualHardware : null) ?? hardware;
+  const physicalReady = !!(manufacturer.trim() && model.trim());
   const [component, setComponent] =
     useState<keyof typeof components>("firmware");
   const [selection, setSelection] = useState<CatalogCandidate | null>(null);
@@ -189,6 +195,9 @@ function DeviceForm({
     product: "",
     version: "",
   });
+  useEffect(() => {
+    if (manualPhysical) manufacturerInput.current?.focus();
+  }, [manualPhysical]);
   const lastRequest = useRef<{ json: string; key: string } | null>(null);
   const create = useMutation({
     mutationFn: (body: object) => {
@@ -206,7 +215,8 @@ function DeviceForm({
   });
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!manual && (!selection || selection.deprecated)) return;
+    if (!physicalReady || (!manual && (!selection || selection.deprecated)))
+      return;
     const form = new FormData(event.currentTarget);
     const data = Object.fromEntries(
       Array.from(form.entries(), ([key, value]) => [
@@ -215,11 +225,16 @@ function DeviceForm({
       ]),
     );
     const { observation, confirmation_reason, ...body } = data;
+    const payload = {
+      ...body,
+      manufacturer: manufacturer.trim(),
+      model: model.trim(),
+    };
     if (manual) {
-      create.mutate(body);
+      create.mutate(payload);
     } else if (selection && observation === "yes" && confirmation_reason) {
       create.mutate({
-        ...body,
+        ...payload,
         product_vendor: selection.vendor,
         product: selection.product,
         version: selection.version,
@@ -239,7 +254,7 @@ function DeviceForm({
   return (
     <form onSubmit={submit} className="rc2-form">
       <h2>Registrar dispositivo</h2>
-      <div className="rc2-fields">
+      <div className="rc2-fields rc2-device-identity">
         <label>
           Tipo de dispositivo
           <select
@@ -256,38 +271,62 @@ function DeviceForm({
             ))}
           </select>
         </label>
-        <label>
-          Fabricante del equipo
-          <input
-            name="manufacturer"
-            ref={manufacturerInput}
-            required
-            maxLength={120}
-            value={manufacturer}
-            onChange={(event) => setManufacturer(event.target.value)}
+        {manualPhysical ? (
+          <>
+            <label>
+              Fabricante del equipo
+              <input
+                ref={manufacturerInput}
+                required
+                maxLength={120}
+                value={manufacturer}
+                onChange={(event) =>
+                  setManualHardware({ vendor: event.target.value, model })
+                }
+              />
+            </label>
+            <label>
+              Modelo del equipo
+              <input
+                required
+                maxLength={120}
+                value={model}
+                onChange={(event) =>
+                  setManualHardware({
+                    vendor: manufacturer,
+                    model: event.target.value,
+                  })
+                }
+              />
+            </label>
+          </>
+        ) : (
+          <HardwareReference
+            vendor={hardware.vendor}
+            model={hardware.model}
+            onApply={(vendor, model) => setHardware({ vendor, model })}
           />
-        </label>
-        <label>
-          Modelo del equipo
-          <input
-            name="model"
-            required
-            maxLength={120}
-            value={model}
-            onChange={(event) => setModel(event.target.value)}
-          />
-        </label>
+        )}
       </div>
-      <HardwareReference
-        vendor={manufacturer}
-        model={model}
-        onManual={() => manufacturerInput.current?.focus()}
-        onApply={(vendor, product) => {
-          setManufacturer(vendor);
-          setModel(product);
-        }}
-      />
-      <div className="rc2-fields">
+      <div className="rc2-actions">
+        {!manualPhysical && (
+          <p>Usa una referencia de hardware NVD que coincida con el equipo.</p>
+        )}
+        <button
+          type="button"
+          className="v2-secondary-button"
+          onClick={() => {
+            if (!manualPhysical)
+              setManualHardware((draft) => draft ?? hardware);
+            setManualPhysical(!manualPhysical);
+          }}
+        >
+          {manualPhysical
+            ? "Volver a los desplegables"
+            : "No encuentro mi equipo"}
+        </button>
+      </div>
+      <div className="rc2-fields rc2-device-admin">
         <label>
           Ubicación administrativa
           <input name="site_label" required maxLength={120} />
@@ -318,10 +357,6 @@ function DeviceForm({
           <textarea name="notes" maxLength={1000} />
         </label>
       </div>
-      <p>
-        Registra fabricante y modelo físicos según tu inventario. El catálogo
-        identifica el componente evaluado.
-      </p>
       <div className="rc2-actions">
         <button
           type="button"
@@ -394,7 +429,7 @@ function DeviceForm({
             selection={selection}
             onSelect={setSelection}
           />
-          {selection && !selection.deprecated && (
+          {physicalReady && selection && !selection.deprecated && (
             <fieldset
               className="rc22-catalog"
               key={JSON.stringify([
@@ -404,6 +439,7 @@ function DeviceForm({
                 deviceType,
                 manufacturer,
                 model,
+                manualPhysical,
                 component,
               ])}
             >
@@ -461,7 +497,9 @@ function DeviceForm({
       <button
         className="v2-primary-button"
         disabled={
-          create.isPending || (!manual && (!selection || selection.deprecated))
+          create.isPending ||
+          !physicalReady ||
+          (!manual && (!selection || selection.deprecated))
         }
       >
         Guardar dispositivo
