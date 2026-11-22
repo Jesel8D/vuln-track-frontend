@@ -7,7 +7,7 @@ if (!process.env.RC1_GUARD_FILE || !process.env.RC1_STATE_FILE) {
 const guard = JSON.parse(readFileSync(process.env.RC1_GUARD_FILE, "utf8"));
 if (
   typeof guard.profile !== "string" ||
-  !/^(?:rc[12]|rc2-catalog(?:2[34])?)(?:-restore(?:-[0-9a-f]{8})?)?$/.test(
+  !/^(?:rc3|(?:rc[12]|rc2-catalog(?:2[34])?)(?:-restore(?:-[0-9a-f]{8})?)?)$/.test(
     guard.profile,
   ) ||
   guard.fixture !== true ||
@@ -27,7 +27,8 @@ for (const value of [guard.api_url, guard.web_url]) {
   }
 }
 process.env.E2E_API_URL = guard.api_url;
-const rc2 = guard.profile.startsWith("rc2");
+const rc3 = guard.profile === "rc3";
+const devices = rc3 || guard.profile.startsWith("rc2");
 export default defineConfig({
   testDir: "./tests/e2e/rc1",
   testMatch:
@@ -35,13 +36,14 @@ export default defineConfig({
       ? [
           "acceptance.spec.ts",
           "fault.spec.ts",
-          ...(rc2 ? ["z-devices.spec.ts"] : []),
-          ...(guard.profile.startsWith("rc2-catalog")
+          ...(devices ? ["z-devices.spec.ts"] : []),
+          ...(rc3 || guard.profile.startsWith("rc2-catalog")
             ? ["zz-catalog.spec.ts"]
             : []),
-          ...(["rc2-catalog23", "rc2-catalog24"].includes(guard.profile)
+          ...(rc3 || ["rc2-catalog23", "rc2-catalog24"].includes(guard.profile)
             ? ["zzz-catalog-wide.spec.ts"]
             : []),
+          ...(rc3 ? ["zzzz-device-revisions.spec.ts"] : []),
         ]
       : "resume.spec.ts",
   fullyParallel: false,
