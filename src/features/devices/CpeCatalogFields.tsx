@@ -51,6 +51,7 @@ function Combobox<T>({
   onClear,
   enabled = true,
   maxLength = 120,
+  prompt = "Seleccionar",
 }: {
   label: string;
   path: string;
@@ -60,6 +61,7 @@ function Combobox<T>({
   onClear: () => void;
   enabled?: boolean;
   maxLength?: number;
+  prompt?: string;
 }) {
   const id = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -168,8 +170,7 @@ function Combobox<T>({
           }}
         >
           <span>
-            {selected ||
-              (enabled ? "Seleccionar" : "Selecciona el campo anterior")}
+            {selected || (enabled ? prompt : "Selecciona el campo anterior")}
           </span>
           <span className="rc31-picker-chevron" aria-hidden="true" />
         </button>
@@ -278,77 +279,39 @@ export function HardwareReference({
   vendor,
   model,
   onApply,
-  onManual,
 }: {
   vendor: string;
   model: string;
   onApply: (vendor: string, model: string) => void;
-  onManual: () => void;
 }) {
-  const manufacturer = vendor.trim();
   const scope = new URLSearchParams({ mode: "live", part: "h" });
   const products = new URLSearchParams(scope);
-  products.set("vendor", manufacturer);
-  const details = useRef<HTMLDetailsElement>(null);
-  const [reference, setReference] = useState<{
-    vendor: string;
-    model: string;
-  } | null>(null);
-  const selectedVendor = reference?.vendor === vendor ? vendor : undefined;
-  const selectedModel =
-    selectedVendor && reference?.model === model ? model : undefined;
+  products.set("vendor", vendor);
   return (
-    <details ref={details} className="rc22-catalog">
-      <summary>Consultar referencias CPE de hardware</summary>
-      <p>
-        Referencias de hardware del catálogo oficial. Elige una solo si coincide
-        con el equipo observado.
-      </p>
-      <div className="rc2-fields">
-        <Combobox<Vendor>
-          label="Buscar fabricante físico"
-          path={"/vendors?" + scope}
-          selected={selectedVendor}
-          describe={(item) => item.vendor}
-          onPick={(item) => {
-            setReference({ vendor: item.vendor, model: "" });
-            onApply(item.vendor, "");
-          }}
-          onClear={() => {
-            setReference(null);
-            onApply("", "");
-          }}
-        />
-        <Combobox<Product>
-          key={manufacturer}
-          label="Buscar referencia del modelo físico"
-          path={"/products?" + products}
-          selected={selectedModel}
-          describe={(item) =>
-            item.title + " · " + item.vendor + ":" + item.product
-          }
-          enabled={manufacturer.length >= 2}
-          onPick={(item) => {
-            setReference({ vendor: item.vendor, model: item.product });
-            onApply(item.vendor, item.product);
-          }}
-          onClear={() => {
-            setReference({ vendor, model: "" });
-            onApply(vendor, "");
-          }}
-        />
-      </div>
-      <button
-        type="button"
-        className="v2-secondary-button"
-        onClick={() => {
-          if (details.current) details.current.open = false;
-          onManual();
+    <>
+      <Combobox<Vendor>
+        label="Fabricante del equipo"
+        prompt="Seleccionar fabricante"
+        path={"/vendors?" + scope}
+        selected={vendor}
+        describe={(item) => item.vendor}
+        onPick={(item) => {
+          if (item.vendor !== vendor) onApply(item.vendor, "");
         }}
-      >
-        No encuentro mi equipo
-      </button>
-    </details>
+        onClear={() => onApply("", "")}
+      />
+      <Combobox<Product>
+        key={vendor}
+        label="Modelo del equipo"
+        prompt="Seleccionar modelo"
+        path={"/products?" + products}
+        selected={model}
+        describe={(item) => item.title + " · " + item.product}
+        enabled={!!vendor}
+        onPick={(item) => onApply(item.vendor, item.product)}
+        onClear={() => onApply(vendor, "")}
+      />
+    </>
   );
 }
 

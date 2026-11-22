@@ -38,6 +38,15 @@
   gap: 12px;
 }
 
+.rc2-device-identity,
+.rc2-device-admin {
+  align-items: start;
+}
+
+.rc2-device-admin {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+}
+
 .rc2-panel label {
   display: grid;
   min-width: 0;
@@ -181,10 +190,12 @@
 }
 
 .rc31-picker-clear {
+  flex: 0 0 auto;
   color: #21536c;
   background: transparent;
   border: 0;
   padding: 0.55rem 0.25rem;
+  white-space: nowrap;
 }
 
 .rc31-confirmation-details {
