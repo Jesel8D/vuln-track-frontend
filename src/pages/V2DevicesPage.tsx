@@ -16,6 +16,7 @@ type DeviceType = "router" | "switch" | "server";
 type Mode = "fixture" | "live" | "unknown";
 type Identification = {
   id: string;
+  cpe_name_id: string;
   cpe_name: string;
   mode: Mode;
   created_at: string;
@@ -773,6 +774,20 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
     queryKey: key,
     queryFn: ({ signal }) => api.request<Device>(path, { signal }),
   });
+  const confirmed = detail.data?.current_identification;
+  const catalogId = confirmed?.cpe_name_id;
+  const catalogMode = confirmed?.mode;
+  const catalogCurrent = useQuery({
+    queryKey: [...key, "catalog-current", catalogId, catalogMode],
+    enabled:
+      !!catalogId && (catalogMode === "fixture" || catalogMode === "live"),
+    queryFn: ({ signal }) =>
+      api.request<CatalogCandidate>(
+        "/api/v2/cpe-catalog/candidates/" + catalogId + "?mode=" + catalogMode,
+        { signal },
+      ),
+    retry: false,
+  });
   const identities = useQuery({
     queryKey: [...key, "identifications", identityOffset],
     enabled: detail.isSuccess,
@@ -898,6 +913,19 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
           </p>
         ) : (
           <p>No hay un CPE confirmado.</p>
+        )}
+        {catalogCurrent.data?.deprecated && (
+          <p role="status">
+            {catalogMode === "fixture"
+              ? "La captura de demostración muestra este CPE como deprecado."
+              : "NVD deprecó este CPE."}{" "}
+            Revisa la identificación antes de confirmarla de nuevo. Fecha en la
+            fuente{" "}
+            {new Date(catalogCurrent.data.nvd_modified).toLocaleDateString(
+              "es-MX",
+            )}
+            .
+          </p>
         )}
         {!row.version && (
           <p>
