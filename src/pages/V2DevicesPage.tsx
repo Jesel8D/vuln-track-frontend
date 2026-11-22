@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../features/auth/context";
+import { CpeCatalogFields } from "../features/devices/CpeCatalogFields";
+import type { CatalogCandidate } from "../features/devices/CpeCatalogFields";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
 import { errorText } from "../services/api";
 import type { CpeCandidateList } from "../types/v2";
@@ -21,8 +23,8 @@ type Device = {
   device_type: DeviceType;
   manufacturer: string;
   model: string;
-  product_vendor: string;
-  product: string;
+  product_vendor: string | null;
+  product: string | null;
   component_kind: string;
   version: string | null;
   site_label: string;
@@ -157,13 +159,33 @@ function DeviceForm({
   onCreated: () => void;
 }) {
   const { api } = useAuth();
+  const [manual, setManual] = useState(false);
+  const [component, setComponent] =
+    useState<keyof typeof components>("firmware");
+  const [selection, setSelection] = useState<CatalogCandidate | null>(null);
+  const [manualValues, setManualValues] = useState({
+    vendor: "",
+    product: "",
+    version: "",
+  });
+  const lastRequest = useRef<{ json: string; key: string } | null>(null);
   const create = useMutation({
-    mutationFn: (body: Record<string, string | null>) =>
-      api.request<Device>(base(workspace), { method: "POST", body }),
+    mutationFn: (body: object) => {
+      const json = JSON.stringify(body);
+      if (lastRequest.current?.json !== json) {
+        lastRequest.current = { json, key: crypto.randomUUID() };
+      }
+      return api.request<Device>(base(workspace), {
+        method: "POST",
+        key: lastRequest.current.key,
+        body,
+      });
+    },
     onSuccess: onCreated,
   });
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!manual && (!selection || selection.deprecated)) return;
     const form = new FormData(event.currentTarget);
     const data = Object.fromEntries(
       Array.from(form.entries(), ([key, value]) => [
@@ -171,8 +193,28 @@ function DeviceForm({
         String(value).trim() || null,
       ]),
     );
-    create.mutate(data);
+    const { observation, confirmation_reason, ...body } = data;
+    if (manual) {
+      create.mutate(body);
+    } else if (selection && observation === "yes" && confirmation_reason) {
+      create.mutate({
+        ...body,
+        product_vendor: selection.vendor,
+        product: selection.product,
+        version: selection.version,
+        catalog_selection: {
+          cpe_name_id: selection.cpe_name_id,
+          expected_cpe_name: selection.cpe_name,
+          expected_nvd_modified: selection.nvd_modified,
+          mode: selection.mode,
+          reason: confirmation_reason,
+          confirmed: true,
+        },
+      });
+    }
   }
+  const part =
+    component === "hardware" ? "h" : component === "software" ? "a" : "o";
   return (
     <form onSubmit={submit} className="rc2-form">
       <h2>Registrar dispositivo</h2>
@@ -205,7 +247,14 @@ function DeviceForm({
         </label>
         <label>
           Componente principal
-          <select name="component_kind">
+          <select
+            name="component_kind"
+            value={component}
+            onChange={(event) => {
+              setComponent(event.target.value as keyof typeof components);
+              setSelection(null);
+            }}
+          >
             {Object.entries(components).map(([id, name]) => (
               <option key={id} value={id}>
                 {name}
@@ -214,36 +263,121 @@ function DeviceForm({
           </select>
         </label>
         <label>
-          Fabricante del producto
-          <input name="product_vendor" required maxLength={120} />
-        </label>
-        <label>
-          Producto principal
-          <input name="product" required maxLength={160} />
-        </label>
-        <label>
-          Versión observada
-          <input
-            name="version"
-            maxLength={120}
-            placeholder="Dejar vacía si es desconocida"
-          />
-        </label>
-        <label>
           Notas no sensibles
           <textarea name="notes" maxLength={1000} />
         </label>
       </div>
       <p>
-        El producto principal puede ser distinto del equipo físico. Usa el
-        nombre del producto que se pueda contrastar con el catálogo CPE.
+        Registra fabricante y modelo físicos según tu inventario. El catálogo
+        identifica el componente evaluado.
       </p>
+      <div className="rc2-actions">
+        <button
+          type="button"
+          className="v2-secondary-button"
+          onClick={() => {
+            setManual(!manual);
+            setSelection(null);
+          }}
+        >
+          {manual ? "Usar catálogo CPE" : "Registrar sin CPE"}
+        </button>
+      </div>
+      {manual ? (
+        <>
+          <p>
+            Pendiente de identificación CPE. Captura solo los datos del producto
+            que conozcas.
+          </p>
+          <div className="rc2-fields">
+            <label>
+              Fabricante del producto
+              <input
+                name="product_vendor"
+                maxLength={120}
+                value={manualValues.vendor}
+                onChange={(event) =>
+                  setManualValues({
+                    ...manualValues,
+                    vendor: event.target.value,
+                  })
+                }
+              />
+            </label>
+            <label>
+              Producto principal
+              <input
+                name="product"
+                maxLength={160}
+                value={manualValues.product}
+                onChange={(event) =>
+                  setManualValues({
+                    ...manualValues,
+                    product: event.target.value,
+                  })
+                }
+              />
+            </label>
+            <label>
+              Versión observada
+              <input
+                name="version"
+                maxLength={120}
+                placeholder="Dejar vacía si es desconocida"
+                value={manualValues.version}
+                onChange={(event) =>
+                  setManualValues({
+                    ...manualValues,
+                    version: event.target.value,
+                  })
+                }
+              />
+            </label>
+          </div>
+        </>
+      ) : (
+        <>
+          <CpeCatalogFields
+            key={part}
+            part={part}
+            selection={selection}
+            onSelect={setSelection}
+          />
+          {selection && !selection.deprecated && (
+            <fieldset
+              className="rc22-catalog"
+              key={selection.cpe_name_id + selection.mode}
+            >
+              <legend>Confirmación humana</legend>
+              <label>
+                <input
+                  type="checkbox"
+                  name="observation"
+                  value="yes"
+                  required
+                />
+                Confirmo que el producto y la versión {selection.version}{" "}
+                corresponden al equipo observado.
+              </label>
+              <label>
+                Motivo de confirmación
+                <input name="confirmation_reason" maxLength={500} required />
+              </label>
+            </fieldset>
+          )}
+        </>
+      )}
       <Feedback
         pending={create.isPending}
         error={create.error}
         label="Guardando dispositivo…"
       />
-      <button className="v2-primary-button" disabled={create.isPending}>
+      <button
+        className="v2-primary-button"
+        disabled={
+          create.isPending || (!manual && (!selection || selection.deprecated))
+        }
+      >
         Guardar dispositivo
       </button>
     </form>
@@ -386,7 +520,11 @@ function Inventory({
                     <td>{types[item.device_type]}</td>
                     <td>{item.version ?? "Desconocida"}</td>
                     <td>{item.status === "active" ? "Activo" : "Retirado"}</td>
-                    <td>{item.cpe_confirmed ? "Confirmado" : "Pendiente"}</td>
+                    <td>
+                      {item.cpe_confirmed
+                        ? "Confirmado"
+                        : "Pendiente de identificación CPE"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
