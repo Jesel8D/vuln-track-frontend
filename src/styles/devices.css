@@ -108,3 +108,57 @@
   display: grid;
   gap: 8px;
 }
+
+.rc22-catalog {
+  border: 1px solid #d9e4f1;
+  border-radius: 0.65rem;
+  padding: 0.85rem;
+  min-width: 0;
+}
+
+.rc22-catalog legend {
+  font-weight: 650;
+  padding-inline: 0.25rem;
+}
+
+.rc22-combobox,
+.rc22-cpe-result {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rc22-selected {
+  display: block;
+  color: #265d67;
+  font-size: 0.875rem;
+}
+
+.rc22-options {
+  background: #f4f8fc;
+  border: 1px solid #cfdeee;
+  border-radius: 0.5rem;
+  padding: 0.35rem;
+}
+
+.rc22-options ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rc22-options li {
+  cursor: pointer;
+  padding: 0.55rem;
+  border-radius: 0.35rem;
+}
+
+.rc22-options li:hover,
+.rc22-options li[aria-selected="true"] {
+  color: #0a3944;
+  background: #d0f1eb;
+}
+
+.rc22-catalog input[type="checkbox"] {
+  width: auto;
+  margin-inline-end: 0.5rem;
+}
