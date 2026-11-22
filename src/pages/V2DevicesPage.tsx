@@ -8,6 +8,10 @@ import {
   HardwareReference,
 } from "../features/devices/CpeCatalogFields";
 import type { CatalogCandidate } from "../features/devices/CpeCatalogFields";
+import {
+  DeviceEditor,
+  DeviceRevisionHistory,
+} from "../features/devices/DeviceRevisions";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
 import { errorText } from "../services/api";
 import type { CpeCandidateList } from "../types/v2";
@@ -24,6 +28,8 @@ type Identification = {
 };
 type Device = {
   id: string;
+  record_version: number;
+  cpe_review_state: "pending" | "confirmed" | "needs_review";
   device_type: DeviceType;
   manufacturer: string;
   model: string;
@@ -45,6 +51,13 @@ type Run = {
   mode: Mode;
   status: "running" | "completed" | "failed";
   selected_cpe: string;
+  is_current_technology: boolean;
+  evaluated_technology: {
+    product_vendor: string | null;
+    product: string | null;
+    observed_version: string;
+    basis: "observed" | "historical_cpe";
+  };
   coverage: "complete" | "partial" | null;
   total_results: number | null;
   retrieved_count: number;
@@ -760,6 +773,87 @@ function FindingCard({
   );
 }
 
+function Reidentify({
+  path,
+  row,
+  onConfirmed,
+}: {
+  path: string;
+  row: Device;
+  onConfirmed: () => void;
+}) {
+  const { api } = useAuth();
+  const [candidate, setCandidate] = useState<CatalogCandidate | null>(null);
+  const [verified, setVerified] = useState(false);
+  const part =
+    row.component_kind === "hardware"
+      ? "h"
+      : row.component_kind === "software"
+        ? "a"
+        : "o";
+  const save = useMutation({
+    mutationFn: (reason: string) =>
+      api.request(path + "/reidentification", {
+        method: "POST",
+        body: {
+          expected_record_version: row.record_version,
+          expected_identification_id: row.current_identification?.id ?? null,
+          cpe_name_id: candidate?.cpe_name_id,
+          expected_cpe_name: candidate?.cpe_name,
+          expected_nvd_modified: candidate?.nvd_modified,
+          mode: candidate?.mode,
+          confirmed: verified,
+          reason,
+        },
+      }),
+    onSuccess: onConfirmed,
+  });
+  return (
+    <form
+      className="rc2-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (candidate && verified && row.version && !candidate.deprecated) {
+          save.mutate(String(new FormData(event.currentTarget).get("reason")));
+        }
+      }}
+    >
+      <CpeCatalogFields
+        part={part}
+        selection={candidate}
+        onSelect={(value) => {
+          setCandidate(value);
+          setVerified(false);
+        }}
+      />
+      {candidate && !candidate.deprecated && row.version && (
+        <>
+          <label>
+            <input
+              type="checkbox"
+              required
+              checked={verified}
+              onChange={(event) => setVerified(event.target.checked)}
+            />
+            Confirmo que el CPE corresponde a la versión observada
+          </label>
+          <label>
+            Motivo de la nueva identificación
+            <input name="reason" required maxLength={500} />
+          </label>
+          <button
+            className="v2-primary-button"
+            disabled={!verified || save.isPending}
+          >
+            Confirmar nueva identidad
+          </button>
+        </>
+      )}
+      <Feedback pending={save.isPending} error={save.error} />
+    </form>
+  );
+}
+
 function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
   const { api, user } = useAuth();
   const cache = useQueryClient();
@@ -769,6 +863,8 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
   const [selectedRun, setSelectedRun] = useState("");
   const [runOffset, setRunOffset] = useState(0);
   const [identityOffset, setIdentityOffset] = useState(0);
+  const [editing, setEditing] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const key = ["device", user?.id, path];
   const detail = useQuery({
     queryKey: key,
@@ -844,14 +940,6 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
     },
     onError: () => void runs.refetch(),
   });
-  const status = useMutation({
-    mutationFn: (value: Device["status"]) =>
-      api.request(path + "/status", {
-        method: "PATCH",
-        body: { status: value },
-      }),
-    onSuccess: () => void detail.refetch(),
-  });
   const row = detail.data;
   if (!row)
     return (
@@ -887,21 +975,32 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
         <p>
           Creado {time(row.created_at)} · Actualizado {time(row.updated_at)}
         </p>
-        {writer && (
+        {writer && !editing && (
           <button
             className="v2-secondary-button"
-            disabled={status.isPending}
-            onClick={() =>
-              status.mutate(row.status === "active" ? "retired" : "active")
-            }
+            onClick={() => setEditing(true)}
           >
-            {row.status === "active"
-              ? "Retirar dispositivo"
-              : "Reactivar dispositivo"}
+            Editar dispositivo
           </button>
         )}
-        <Feedback error={status.error} />
+        {writer && editing && (
+          <DeviceEditor
+            key={path}
+            path={path}
+            device={row}
+            onClose={() => setEditing(false)}
+            onSave={() => {
+              setEditing(false);
+              setCatalogOpen(false);
+              setSelection("");
+              search.reset();
+              confirm.reset();
+              void cache.invalidateQueries({ queryKey: key });
+            }}
+          />
+        )}
       </section>
+      <DeviceRevisionHistory path={path} current={row.record_version} />
       <section className="v2-panel rc2-panel">
         <h2>Identificación CPE</h2>
         {row.current_identification ? (
@@ -912,7 +1011,35 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
             {modeLabel(row.current_identification.mode)}
           </p>
         ) : (
-          <p>No hay un CPE confirmado.</p>
+          <p role="status">
+            {row.cpe_review_state === "needs_review"
+              ? "El CPE requiere una nueva revisión por el cambio del componente."
+              : "No hay un CPE confirmado."}
+          </p>
+        )}
+        {active && row.cpe_review_state === "needs_review" && (
+          <>
+            <button
+              type="button"
+              className="v2-secondary-button"
+              aria-expanded={catalogOpen}
+              onClick={() => setCatalogOpen(!catalogOpen)}
+            >
+              Buscar nueva identidad
+            </button>
+            {catalogOpen && (
+              <Reidentify
+                key={row.record_version}
+                path={path}
+                row={row}
+                onConfirmed={() => {
+                  setCatalogOpen(false);
+                  setIdentityOffset(0);
+                  void cache.invalidateQueries({ queryKey: key });
+                }}
+              />
+            )}
+          </>
         )}
         {catalogCurrent.data?.deprecated && (
           <p role="status">
@@ -1073,6 +1200,18 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
                 {entry.stored_count} guardados
               </p>
               <code>{entry.selected_cpe}</code>
+              <p>
+                {entry.is_current_technology
+                  ? "Identidad tecnológica vigente"
+                  : "Identidad tecnológica anterior"}
+                {" · "}
+                {entry.evaluated_technology.product_vendor}{" "}
+                {entry.evaluated_technology.product}
+                {" · Versión evaluada "}
+                {entry.evaluated_technology.observed_version}
+                {entry.evaluated_technology.basis === "historical_cpe" &&
+                  " · Producto derivado del CPE histórico"}
+              </p>
               {entry.failure_code && <p>Resultado: {entry.failure_code}</p>}
               {!!entry.warning_codes.length && (
                 <p>Avisos: {entry.warning_codes.join(", ")}</p>
