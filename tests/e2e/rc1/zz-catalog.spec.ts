@@ -37,6 +37,7 @@ test("RC2.2 local catalog, keyboard, atomic confirmation, fixture review and man
   await page.getByLabel("Fuente del catálogo").selectOption("fixture");
 
   async function pick(label: RegExp, q: string, result: RegExp) {
+    await page.getByRole("button", { name: label }).click();
     const field = page.getByRole("combobox", { name: label });
     await field.fill(q);
     await expect(page.getByRole("option", { name: result })).toBeVisible();
@@ -47,6 +48,32 @@ test("RC2.2 local catalog, keyboard, atomic confirmation, fixture review and man
     );
     await field.press("Enter");
   }
+  const maker = page.getByRole("button", {
+    name: "Buscar fabricante CPE",
+    exact: true,
+  });
+  await maker.press("ArrowDown");
+  await expect(
+    page.getByRole("option", { name: "cisco", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("combobox", { name: "Buscar fabricante CPE" })
+    .press("Escape");
+  await expect(maker).toBeFocused();
+  await pick(/fabricante CPE/, "cis", /^cisco$/);
+  await pick(/producto CPE/, "RV340", /small_business_rv340_firmware/);
+  await pick(/catalogada/, "1.0.0.33", /^1\.0\.0\.33$/);
+  await pick(/CPE exacto/, "", /cpe:2\.3:o:cisco/);
+  await expect(page.getByText("UUID del CPE", { exact: false })).toBeVisible();
+  await page
+    .getByRole("button", { name: "Limpiar Buscar fabricante CPE" })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Buscar producto CPE", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("checkbox", { name: /corresponden al equipo observado/ }),
+  ).toHaveCount(0);
   await pick(/fabricante CPE/, "cis", /^cisco$/);
   await pick(/producto CPE/, "RV340", /small_business_rv340_firmware/);
   await pick(/catalogada/, "1.0.0.33", /^1\.0\.0\.33$/);
@@ -129,7 +156,9 @@ test("RC2.2 local catalog, keyboard, atomic confirmation, fixture review and man
 
   await page.getByRole("link", { name: "Volver a dispositivos" }).click();
   await physical("Modelo fuera del alcance");
-  await page.getByRole("button", { name: "Registrar sin CPE" }).click();
+  await page
+    .getByRole("button", { name: "Registrar sin identificación CPE" })
+    .click();
   const pending = page.waitForResponse(
     (response) =>
       response.url().endsWith("/devices") &&
@@ -189,4 +218,23 @@ test("RC2.2 local catalog, keyboard, atomic confirmation, fixture review and man
     ),
     { mode: 0o600 },
   );
+  await page
+    .getByRole("button", { name: "Cerrar sesión", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/login(?:\?.*)?$/);
+  await page.reload();
+  await loginUi(page, state.primary);
+  await page
+    .getByRole("link", { name: "Dispositivos", exact: true })
+    .first()
+    .click();
+  await page
+    .getByRole("link", { name: "Cisco RV340 asistido", exact: true })
+    .click();
+  await expect(page.getByText("CPE vigente", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByText(/cpe:2\.3:o:cisco:small_business_rv340_firmware:1\.0\.0\.33:/)
+      .first(),
+  ).toBeVisible();
 });

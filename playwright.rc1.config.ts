@@ -7,7 +7,7 @@ if (!process.env.RC1_GUARD_FILE || !process.env.RC1_STATE_FILE) {
 const guard = JSON.parse(readFileSync(process.env.RC1_GUARD_FILE, "utf8"));
 if (
   typeof guard.profile !== "string" ||
-  !/^(?:rc3|(?:rc[12]|rc2-catalog(?:2[34])?)(?:-restore(?:-[0-9a-f]{8})?)?)$/.test(
+  !/^(?:rc3(?:-catalog31)?|(?:rc[12]|rc2-catalog(?:2[34])?)(?:-restore(?:-[0-9a-f]{8})?)?)$/.test(
     guard.profile,
   ) ||
   guard.fixture !== true ||
@@ -27,7 +27,7 @@ for (const value of [guard.api_url, guard.web_url]) {
   }
 }
 process.env.E2E_API_URL = guard.api_url;
-const rc3 = guard.profile === "rc3";
+const rc3 = guard.profile === "rc3" || guard.profile === "rc3-catalog31";
 const devices = rc3 || guard.profile.startsWith("rc2");
 export default defineConfig({
   testDir: "./tests/e2e/rc1",

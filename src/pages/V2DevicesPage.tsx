@@ -177,7 +177,9 @@ function DeviceForm({
 }) {
   const { api } = useAuth();
   const [manual, setManual] = useState(false);
+  const [deviceType, setDeviceType] = useState<DeviceType>("router");
   const [manufacturer, setManufacturer] = useState("");
+  const manufacturerInput = useRef<HTMLInputElement>(null);
   const [model, setModel] = useState("");
   const [component, setComponent] =
     useState<keyof typeof components>("firmware");
@@ -240,7 +242,13 @@ function DeviceForm({
       <div className="rc2-fields">
         <label>
           Tipo de dispositivo
-          <select name="device_type">
+          <select
+            name="device_type"
+            value={deviceType}
+            onChange={(event) =>
+              setDeviceType(event.target.value as DeviceType)
+            }
+          >
             {Object.entries(types).map(([id, name]) => (
               <option key={id} value={id}>
                 {name}
@@ -252,6 +260,7 @@ function DeviceForm({
           Fabricante del equipo
           <input
             name="manufacturer"
+            ref={manufacturerInput}
             required
             maxLength={120}
             value={manufacturer}
@@ -268,6 +277,17 @@ function DeviceForm({
             onChange={(event) => setModel(event.target.value)}
           />
         </label>
+      </div>
+      <HardwareReference
+        vendor={manufacturer}
+        model={model}
+        onManual={() => manufacturerInput.current?.focus()}
+        onApply={(vendor, product) => {
+          setManufacturer(vendor);
+          setModel(product);
+        }}
+      />
+      <div className="rc2-fields">
         <label>
           Ubicación administrativa
           <input name="site_label" required maxLength={120} />
@@ -298,13 +318,6 @@ function DeviceForm({
           <textarea name="notes" maxLength={1000} />
         </label>
       </div>
-      <HardwareReference
-        vendor={manufacturer}
-        onApply={(vendor, product) => {
-          setManufacturer(vendor);
-          setModel(product);
-        }}
-      />
       <p>
         Registra fabricante y modelo físicos según tu inventario. El catálogo
         identifica el componente evaluado.
@@ -318,7 +331,7 @@ function DeviceForm({
             setSelection(null);
           }}
         >
-          {manual ? "Usar catálogo CPE" : "Registrar sin CPE"}
+          {manual ? "Usar catálogo CPE" : "Registrar sin identificación CPE"}
         </button>
       </div>
       {manual ? (
@@ -384,10 +397,45 @@ function DeviceForm({
           {selection && !selection.deprecated && (
             <fieldset
               className="rc22-catalog"
-              key={selection.cpe_name_id + selection.mode}
+              key={JSON.stringify([
+                selection.cpe_name_id,
+                selection.mode,
+                selection.nvd_modified,
+                deviceType,
+                manufacturer,
+                model,
+                component,
+              ])}
             >
               <legend>Confirmación humana</legend>
-              <label>
+              <dl className="rc31-confirmation-details">
+                <dt>Equipo observado</dt>
+                <dd>
+                  {types[deviceType]} · {manufacturer} {model}
+                </dd>
+                <dt>Componente</dt>
+                <dd>
+                  {components[component]} · {selection.vendor}{" "}
+                  {selection.product}
+                </dd>
+                <dt>Versión por confirmar</dt>
+                <dd>{selection.version}</dd>
+                <dt>CPE seleccionado</dt>
+                <dd>
+                  <code>{selection.cpe_name}</code>
+                </dd>
+                <dt>Fuente y fecha</dt>
+                <dd>
+                  {selection.mode === "fixture"
+                    ? "Captura fixture"
+                    : selection.source === "nvd-feed"
+                      ? "Diccionario oficial NVD"
+                      : "API oficial NVD"}
+                  {" · "}
+                  {new Date(selection.nvd_modified).toLocaleDateString("es-MX")}
+                </dd>
+              </dl>
+              <label className="rc31-check">
                 <input
                   type="checkbox"
                   name="observation"

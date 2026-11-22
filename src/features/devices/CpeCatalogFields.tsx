@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { errorText } from "../../services/api";
@@ -16,6 +16,7 @@ type Product = { vendor: string; product: string; title: string };
 type Version = { version: string; deprecated: boolean };
 type CatalogStatus = {
   records: number;
+  catalog_backend: "local" | "external_readonly";
   coverage: "complete" | "partial" | "empty";
   last_synchronized_at: string | null;
   stale: boolean;
@@ -45,30 +46,45 @@ function Combobox<T>({
   label,
   path,
   selected,
-  onPick,
   describe,
+  onPick,
+  onClear,
   enabled = true,
   maxLength = 120,
 }: {
   label: string;
   path: string;
   selected?: string;
-  onPick: (item: T) => void;
   describe: (item: T) => string;
+  onPick: (item: T) => void;
+  onClear: () => void;
   enabled?: boolean;
   maxLength?: number;
 }) {
   const id = useId();
+  const trigger = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { api, user } = useAuth();
   const [input, setInput] = useState("");
   const [query, setQuery] = useState("");
   const [offset, setOffset] = useState(0);
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(-1);
+  const current = query === input.trim();
   useEffect(() => {
     const timer = window.setTimeout(() => setQuery(input.trim()), 275);
     return () => window.clearTimeout(timer);
   }, [input]);
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+  useEffect(() => {
+    if (open && index >= 0) {
+      document
+        .getElementById(id + "-" + index)
+        ?.scrollIntoView({ block: "nearest" });
+    }
+  }, [id, index, open]);
   const search = useQuery({
     queryKey: ["cpe-catalog-search", user?.id, path, query, offset],
     queryFn: ({ signal }) => {
@@ -79,85 +95,128 @@ function Combobox<T>({
       });
       return api.request<Paging<T>>(base + path + "&" + params, { signal });
     },
-    enabled: open && enabled && query === input.trim(),
+    enabled: open && enabled && current,
     retry: false,
     staleTime: 30_000,
   });
-  const items = search.data?.items ?? [];
-  const paging = search.data?.page;
+  const items = current ? (search.data?.items ?? []) : [];
+  const paging = current ? search.data?.page : undefined;
+
+  function close(focus = false) {
+    setOpen(false);
+    setIndex(-1);
+    if (focus) trigger.current?.focus();
+  }
+
   function choose(item: T) {
     onPick(item);
     setInput("");
-    setOpen(false);
-    setIndex(-1);
+    setQuery("");
     setOffset(0);
+    close(true);
   }
+
   function move(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Escape") {
-      setOpen(false);
-      setIndex(-1);
-      return;
-    }
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
-      setOpen(true);
+      close(true);
+    } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!items.length) return;
       const delta = event.key === "ArrowDown" ? 1 : -1;
-      setIndex((current) => {
-        if (!items.length) return -1;
-        if (current < 0) return delta === 1 ? 0 : items.length - 1;
-        return (current + delta + items.length) % items.length;
-      });
-    }
-    if (event.key === "Enter" && open) {
+      setIndex((position) =>
+        position < 0
+          ? delta === 1
+            ? 0
+            : items.length - 1
+          : (position + delta + items.length) % items.length,
+      );
+    } else if (event.key === "Enter") {
       event.preventDefault();
       if (items[index]) choose(items[index]);
     }
   }
+
+  function changePage(value: number) {
+    setIndex(-1);
+    setOffset(value);
+  }
+
   return (
     <div
       className="rc22-combobox"
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
-          setOpen(false);
-          setIndex(-1);
-        }
+        if (!event.currentTarget.contains(event.relatedTarget)) close();
       }}
     >
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        role="combobox"
-        autoComplete="off"
-        aria-autocomplete="list"
-        aria-expanded={open && enabled}
-        aria-controls={open && enabled ? id + "-options" : undefined}
-        aria-activedescendant={
-          open && items[index] ? id + "-" + index : undefined
-        }
-        disabled={!enabled}
-        value={input}
-        placeholder={selected ?? "Buscar en el catálogo"}
-        onChange={(event) => {
-          setInput(event.target.value);
-          setOffset(0);
-          setIndex(-1);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={move}
-        maxLength={maxLength}
-      />
-      {selected && <span className="rc22-selected">{selected}</span>}
+      <span className="rc31-picker-label">{label}</span>
+      <div className="rc31-picker-actions">
+        <button
+          ref={trigger}
+          type="button"
+          className="rc31-picker-trigger"
+          aria-label={label + (selected ? " · " + selected : "")}
+          aria-expanded={open && enabled}
+          aria-controls={open && enabled ? id + "-panel" : undefined}
+          disabled={!enabled}
+          onClick={() => (open ? close() : setOpen(true))}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              setOpen(true);
+            }
+          }}
+        >
+          <span>
+            {selected ||
+              (enabled ? "Seleccionar" : "Selecciona el campo anterior")}
+          </span>
+          <span className="rc31-picker-chevron" aria-hidden="true" />
+        </button>
+        {selected && (
+          <button
+            type="button"
+            className="rc31-picker-clear"
+            aria-label={"Limpiar " + label}
+            onClick={() => {
+              onClear();
+              setInput("");
+              setQuery("");
+              setOffset(0);
+              close(true);
+            }}
+          >
+            Limpiar
+          </button>
+        )}
+      </div>
       {open && enabled && (
-        <div className="rc22-options">
-          {query !== input.trim() || search.isFetching ? (
-            <p role="status">Buscando…</p>
-          ) : null}
+        <div className="rc22-options" id={id + "-panel"}>
+          <input
+            ref={inputRef}
+            id={id}
+            role="combobox"
+            aria-label={label}
+            autoComplete="off"
+            aria-autocomplete="list"
+            aria-expanded="true"
+            aria-controls={id + "-options"}
+            aria-activedescendant={items[index] ? id + "-" + index : undefined}
+            placeholder="Filtrar opciones"
+            value={input}
+            maxLength={maxLength}
+            onChange={(event) => {
+              setInput(event.target.value);
+              setOffset(0);
+              setIndex(-1);
+            }}
+            onKeyDown={move}
+          />
           <ul id={id + "-options"} role="listbox" aria-label={label}>
             {items.map((item, position) => (
               <li
                 id={id + "-" + position}
-                key={describe(item)}
+                key={id + "-" + position}
                 role="option"
                 aria-selected={index === position}
                 onMouseDown={(event) => event.preventDefault()}
@@ -167,33 +226,32 @@ function Combobox<T>({
               </li>
             ))}
           </ul>
-          {search.error && (
+          {(!current || search.isFetching) && (
+            <p role="status">Buscando opciones…</p>
+          )}
+          {current && search.isError && (
             <div role="alert">
               <p>{errorText(search.error)}</p>
-              <button
-                type="button"
-                className="v2-secondary-button"
-                onClick={() => void search.refetch()}
-              >
+              <button type="button" onClick={() => void search.refetch()}>
                 Reintentar
               </button>
             </div>
           )}
-          {search.isSuccess && !items.length && !search.isFetching && (
-            <p>Sin resultados en este alcance.</p>
-          )}
+          {current &&
+            search.isSuccess &&
+            !items.length &&
+            !search.isFetching && (
+              <p role="status">No hay opciones para esta búsqueda.</p>
+            )}
           {paging?.truncated && (
-            <p>Refina la búsqueda. Se muestran hasta 500 coincidencias.</p>
+            <p>Refina la búsqueda para ver otras coincidencias.</p>
           )}
           {paging && paging.total > paging.limit && (
             <div className="rc2-actions">
               <button
                 type="button"
                 disabled={offset === 0}
-                onClick={() => {
-                  setIndex(-1);
-                  setOffset(offset - paging.limit);
-                }}
+                onClick={() => changePage(offset - paging.limit)}
               >
                 Anterior
               </button>
@@ -204,10 +262,7 @@ function Combobox<T>({
               <button
                 type="button"
                 disabled={offset + paging.limit >= paging.total}
-                onClick={() => {
-                  setIndex(-1);
-                  setOffset(offset + paging.limit);
-                }}
+                onClick={() => changePage(offset + paging.limit)}
               >
                 Siguiente
               </button>
@@ -221,35 +276,78 @@ function Combobox<T>({
 
 export function HardwareReference({
   vendor,
+  model,
   onApply,
+  onManual,
 }: {
   vendor: string;
-  onApply: (vendor: string, product: string) => void;
+  model: string;
+  onApply: (vendor: string, model: string) => void;
+  onManual: () => void;
 }) {
   const manufacturer = vendor.trim();
-  const query = new URLSearchParams({
-    mode: "live",
-    part: "h",
-    vendor: manufacturer,
-  });
+  const scope = new URLSearchParams({ mode: "live", part: "h" });
+  const products = new URLSearchParams(scope);
+  products.set("vendor", manufacturer);
+  const details = useRef<HTMLDetailsElement>(null);
+  const [reference, setReference] = useState<{
+    vendor: string;
+    model: string;
+  } | null>(null);
+  const selectedVendor = reference?.vendor === vendor ? vendor : undefined;
+  const selectedModel =
+    selectedVendor && reference?.model === model ? model : undefined;
   return (
-    <details className="rc22-catalog">
+    <details ref={details} className="rc22-catalog">
       <summary>Consultar referencias CPE de hardware</summary>
       <p>
-        Ingresa el fabricante del equipo. Elige una referencia solo si coincide
-        con el modelo observado. Estos datos sugieren el nombre del equipo y no
-        asignan un CPE.
+        Referencias de hardware del catálogo oficial. Elige una solo si coincide
+        con el equipo observado.
       </p>
-      <Combobox<Product>
-        key={manufacturer}
-        label="Buscar referencia del modelo físico"
-        path={"/products?" + query}
-        describe={(item) =>
-          item.title + " · " + item.vendor + ":" + item.product
-        }
-        enabled={manufacturer.length >= 2}
-        onPick={(item) => onApply(item.vendor, item.product)}
-      />
+      <div className="rc2-fields">
+        <Combobox<Vendor>
+          label="Buscar fabricante físico"
+          path={"/vendors?" + scope}
+          selected={selectedVendor}
+          describe={(item) => item.vendor}
+          onPick={(item) => {
+            setReference({ vendor: item.vendor, model: "" });
+            onApply(item.vendor, "");
+          }}
+          onClear={() => {
+            setReference(null);
+            onApply("", "");
+          }}
+        />
+        <Combobox<Product>
+          key={manufacturer}
+          label="Buscar referencia del modelo físico"
+          path={"/products?" + products}
+          selected={selectedModel}
+          describe={(item) =>
+            item.title + " · " + item.vendor + ":" + item.product
+          }
+          enabled={manufacturer.length >= 2}
+          onPick={(item) => {
+            setReference({ vendor: item.vendor, model: item.product });
+            onApply(item.vendor, item.product);
+          }}
+          onClear={() => {
+            setReference({ vendor, model: "" });
+            onApply(vendor, "");
+          }}
+        />
+      </div>
+      <button
+        type="button"
+        className="v2-secondary-button"
+        onClick={() => {
+          if (details.current) details.current.open = false;
+          onManual();
+        }}
+      >
+        No encuentro mi equipo
+      </button>
     </details>
   );
 }
@@ -290,6 +388,15 @@ export function CpeCatalogFields({
   if (deprecated) candidateParams.set("deprecated", deprecated);
   const build = (resource: string, values: URLSearchParams) =>
     "/" + resource + "?" + values;
+  const cveMode = import.meta.env.VITE_NVD_MODE;
+  const clearVersion = () => {
+    setVersion("");
+    onSelect(null);
+  };
+  const clearProduct = () => {
+    setProduct("");
+    clearVersion();
+  };
   return (
     <fieldset className="rc22-catalog">
       <legend>Identidad del componente en NVD</legend>
@@ -300,15 +407,20 @@ export function CpeCatalogFields({
           onChange={(event) => {
             setMode(event.target.value as Mode);
             setVendor("");
-            setProduct("");
-            setVersion("");
-            onSelect(null);
+            clearProduct();
           }}
         >
           <option value="live">NVD oficial sincronizado</option>
           <option value="fixture">Captura NVD de demostración (fixture)</option>
         </select>
       </label>
+      {cveMode === "fixture" && (
+        <p>
+          Consultas CVE en modo demostración.{" "}
+          {mode === "live" &&
+            "Para consultar CVE en este perfil, confirma un CPE de la captura fixture."}
+        </p>
+      )}
       {status.isPending && (
         <p role="status">Consultando estado del catálogo…</p>
       )}
@@ -326,6 +438,10 @@ export function CpeCatalogFields({
       )}
       {status.data && (
         <p role="status">
+          {mode === "live" &&
+            (status.data.catalog_backend === "external_readonly"
+              ? "Catálogo externo de solo lectura. "
+              : "Catálogo local de esta instalación. ")}
           {status.data.records === 0 ? (
             "Catálogo vacío para esta fuente."
           ) : (
@@ -333,9 +449,11 @@ export function CpeCatalogFields({
               {status.data.records.toLocaleString("es-MX")} CPE en catálogo{" "}
               {status.data.coverage === "complete" ? "completo" : "parcial"}.
               Última sincronización:{" "}
-              {new Date(status.data.last_synchronized_at!).toLocaleString(
-                "es-MX",
-              )}
+              {status.data.last_synchronized_at
+                ? new Date(status.data.last_synchronized_at).toLocaleString(
+                    "es-MX",
+                  )
+                : "sin fecha"}
               .
               {status.data.stale &&
                 " Catálogo desactualizado. Verifica la fuente antes de confirmar."}
@@ -372,9 +490,11 @@ export function CpeCatalogFields({
           describe={(value) => value.vendor}
           onPick={(value) => {
             setVendor(value.vendor);
-            setProduct("");
-            setVersion("");
-            onSelect(null);
+            clearProduct();
+          }}
+          onClear={() => {
+            setVendor("");
+            clearProduct();
           }}
         />
         <Combobox<Product>
@@ -385,9 +505,9 @@ export function CpeCatalogFields({
           describe={(value) => value.title + " · " + value.product}
           onPick={(value) => {
             setProduct(value.product);
-            setVersion("");
-            onSelect(null);
+            clearVersion();
           }}
+          onClear={clearProduct}
           enabled={!!vendor}
         />
         <Combobox<Version>
@@ -405,6 +525,7 @@ export function CpeCatalogFields({
             setVersion(value.version);
             onSelect(null);
           }}
+          onClear={clearVersion}
           enabled={!!product}
         />
         <label>
@@ -431,6 +552,7 @@ export function CpeCatalogFields({
             value.cpe_name + (value.deprecated ? " · Deprecado" : "")
           }
           onPick={onSelect}
+          onClear={() => onSelect(null)}
           enabled={!!version}
         />
       </div>
@@ -439,13 +561,17 @@ export function CpeCatalogFields({
           <p>{selection.title}</p>
           <code>{selection.cpe_name}</code>
           <p>
+            UUID del CPE <code>{selection.cpe_name_id}</code>
+          </p>
+          <p>
             {selection.source === "nvd-feed"
               ? "Diccionario CPE de NVD"
               : selection.source === "nvd-api"
                 ? "API oficial de NVD"
                 : "Captura fixture de NVD"}
             . Actualizado por NVD el{" "}
-            {new Date(selection.nvd_modified).toLocaleDateString("es-MX")}.
+            {new Date(selection.nvd_modified).toLocaleDateString("es-MX")}.{" "}
+            {selection.deprecated ? "Deprecado." : "Vigente en el catálogo."}
           </p>
           {selection.deprecated && (
             <p role="alert">
