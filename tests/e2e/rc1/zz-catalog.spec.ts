@@ -84,8 +84,28 @@ test("RC2.2 local catalog, keyboard, atomic confirmation, fixture review and man
   expect(row.current_identification.catalog_evidence.source).toBe(
     "nvd-captured-fixture",
   );
+  const currentCatalog =
+    catalog + "/candidates/" + row.current_identification.cpe_name_id;
+  const deprecation = (url: URL) => url.pathname === currentCatalog;
+  await page.route(deprecation, async (route) => {
+    if (route.request().method() !== "GET") {
+      await route.continue();
+      return;
+    }
+    const original = await route.fetch();
+    await route.fulfill({
+      response: original,
+      json: { ...(await original.json()), deprecated: true },
+    });
+  });
   await page.getByRole("link", { name: "Cisco RV340 asistido" }).click();
   await expect(page.getByText("CPE vigente", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "muestra este CPE como deprecado" }),
+  ).toBeVisible();
+  await page.unroute(deprecation);
   await page.getByRole("button", { name: "Consultar CVE" }).click();
   await expect(
     page.getByRole("heading", { name: "CVE-2017-6784" }),
