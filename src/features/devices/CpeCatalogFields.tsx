@@ -9,16 +9,23 @@ type Mode = "fixture" | "live";
 type Part = "a" | "o" | "h";
 type Paging<T> = {
   items: T[];
-  page: { limit: number; offset: number; total: number };
+  page: { limit: number; offset: number; total: number; truncated?: boolean };
 };
 type Vendor = { vendor: string };
 type Product = { vendor: string; product: string; title: string };
 type Version = { version: string; deprecated: boolean };
 type CatalogStatus = {
   records: number;
+  coverage: "complete" | "partial" | "empty";
   last_synchronized_at: string | null;
   stale: boolean;
   last_run: { status: "partial" | "complete" | "failed" } | null;
+  feed?: {
+    status: "partial" | "complete" | "failed";
+    next_item: number;
+    total_items: number;
+    discarded: number;
+  } | null;
 };
 export type CatalogCandidate = {
   cpe_name_id: string;
@@ -30,6 +37,7 @@ export type CatalogCandidate = {
   deprecated: boolean;
   deprecated_by: { cpeName: string; cpeNameId: string }[];
   nvd_modified: string;
+  source: "nvd-api" | "nvd-feed" | "nvd-captured-fixture";
   mode: Mode;
 };
 
@@ -40,6 +48,7 @@ function Combobox<T>({
   onPick,
   describe,
   enabled = true,
+  maxLength = 120,
 }: {
   label: string;
   path: string;
@@ -47,6 +56,7 @@ function Combobox<T>({
   onPick: (item: T) => void;
   describe: (item: T) => string;
   enabled?: boolean;
+  maxLength?: number;
 }) {
   const id = useId();
   const { api, user } = useAuth();
@@ -135,7 +145,7 @@ function Combobox<T>({
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={move}
-        maxLength={120}
+        maxLength={maxLength}
       />
       {selected && <span className="rc22-selected">{selected}</span>}
       {open && enabled && (
@@ -172,6 +182,9 @@ function Combobox<T>({
           {search.isSuccess && !items.length && !search.isFetching && (
             <p>Sin resultados en este alcance.</p>
           )}
+          {paging?.truncated && (
+            <p>Refina la búsqueda. Se muestran hasta 500 coincidencias.</p>
+          )}
           {paging && paging.total > paging.limit && (
             <div className="rc2-actions">
               <button
@@ -206,6 +219,41 @@ function Combobox<T>({
   );
 }
 
+export function HardwareReference({
+  vendor,
+  onApply,
+}: {
+  vendor: string;
+  onApply: (vendor: string, product: string) => void;
+}) {
+  const manufacturer = vendor.trim();
+  const query = new URLSearchParams({
+    mode: "live",
+    part: "h",
+    vendor: manufacturer,
+  });
+  return (
+    <details className="rc22-catalog">
+      <summary>Consultar referencias CPE de hardware</summary>
+      <p>
+        Ingresa el fabricante del equipo. Elige una referencia solo si coincide
+        con el modelo observado. Estos datos sugieren el nombre del equipo y no
+        asignan un CPE.
+      </p>
+      <Combobox<Product>
+        key={manufacturer}
+        label="Buscar referencia del modelo físico"
+        path={"/products?" + query}
+        describe={(item) =>
+          item.title + " · " + item.vendor + ":" + item.product
+        }
+        enabled={manufacturer.length >= 2}
+        onPick={(item) => onApply(item.vendor, item.product)}
+      />
+    </details>
+  );
+}
+
 export function CpeCatalogFields({
   part,
   selection,
@@ -220,15 +268,26 @@ export function CpeCatalogFields({
   const [vendor, setVendor] = useState("");
   const [product, setProduct] = useState("");
   const [version, setVersion] = useState("");
+  const [deprecated, setDeprecated] = useState("");
   const status = useQuery({
     queryKey: ["cpe-catalog-status", user?.id, mode],
     queryFn: ({ signal }) =>
       api.request<CatalogStatus>(base + "/status?mode=" + mode, { signal }),
     retry: false,
     staleTime: 30_000,
+    refetchInterval: (query) =>
+      query.state.data?.feed?.status === "partial" ? 5_000 : false,
   });
   const params = new URLSearchParams({ mode, part });
   const family = new URLSearchParams({ mode, part, vendor });
+  const candidateParams = new URLSearchParams({
+    mode,
+    part,
+    vendor,
+    product,
+    version,
+  });
+  if (deprecated) candidateParams.set("deprecated", deprecated);
   const build = (resource: string, values: URLSearchParams) =>
     "/" + resource + "?" + values;
   return (
@@ -271,8 +330,9 @@ export function CpeCatalogFields({
             "Catálogo vacío para esta fuente."
           ) : (
             <>
-              {status.data.records} CPE en catálogo parcial. Última
-              sincronización:{" "}
+              {status.data.records.toLocaleString("es-MX")} CPE en catálogo{" "}
+              {status.data.coverage === "complete" ? "completo" : "parcial"}.
+              Última sincronización:{" "}
               {new Date(status.data.last_synchronized_at!).toLocaleString(
                 "es-MX",
               )}
@@ -280,11 +340,29 @@ export function CpeCatalogFields({
               {status.data.stale &&
                 " Catálogo desactualizado. Verifica la fuente antes de confirmar."}
               {status.data.last_run?.status === "failed" &&
-                " La Última sincronización falló. Se conservan las filas previas."}
+                " La última sincronización falló. Se conservan las filas previas."}
             </>
           )}
         </p>
       )}
+      {status.data?.feed && status.data.feed.status !== "complete" && (
+        <p role="status">
+          {status.data.feed.status === "failed"
+            ? "Importación detenida"
+            : "Importación en curso"}
+          . {status.data.feed.next_item.toLocaleString("es-MX")} de{" "}
+          {status.data.feed.total_items.toLocaleString("es-MX")} entradas
+          procesadas.
+        </p>
+      )}
+      {status.data?.feed?.status === "complete" &&
+        status.data.feed.discarded > 0 && (
+          <p>
+            La edición se procesó con{" "}
+            {status.data.feed.discarded.toLocaleString("es-MX")}{" "}
+            {status.data.feed.discarded === 1 ? "descarte" : "descartes"}.
+          </p>
+        )}
       <div className="rc2-fields">
         <Combobox<Vendor>
           key={"vendor-" + mode}
@@ -329,13 +407,25 @@ export function CpeCatalogFields({
           }}
           enabled={!!product}
         />
+        <label>
+          Estado del CPE
+          <select
+            value={deprecated}
+            onChange={(event) => {
+              setDeprecated(event.target.value);
+              onSelect(null);
+            }}
+          >
+            <option value="">Todos</option>
+            <option value="false">Vigentes</option>
+            <option value="true">Deprecados</option>
+          </select>
+        </label>
         <Combobox<CatalogCandidate>
-          key={"cpe-" + mode + vendor + product + version}
+          key={"cpe-" + mode + vendor + product + version + deprecated}
+          maxLength={1024}
           label="Buscar CPE exacto"
-          path={build(
-            "candidates",
-            new URLSearchParams({ mode, part, vendor, product, version }),
-          )}
+          path={build("candidates", candidateParams)}
           selected={selection?.cpe_name}
           describe={(value) =>
             value.cpe_name + (value.deprecated ? " · Deprecado" : "")
@@ -348,6 +438,15 @@ export function CpeCatalogFields({
         <div className="rc22-cpe-result">
           <p>{selection.title}</p>
           <code>{selection.cpe_name}</code>
+          <p>
+            {selection.source === "nvd-feed"
+              ? "Diccionario CPE de NVD"
+              : selection.source === "nvd-api"
+                ? "API oficial de NVD"
+                : "Captura fixture de NVD"}
+            . Actualizado por NVD el{" "}
+            {new Date(selection.nvd_modified).toLocaleDateString("es-MX")}.
+          </p>
           {selection.deprecated && (
             <p role="alert">
               CPE deprecado. Elige un candidato vigente o guarda sin CPE.
