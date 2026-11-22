@@ -127,10 +127,76 @@
   overflow-wrap: anywhere;
 }
 
-.rc22-selected {
+.rc31-picker-label {
   display: block;
-  color: #265d67;
-  font-size: 0.875rem;
+  margin-bottom: 0.4rem;
+  font-weight: 650;
+}
+
+.rc31-picker-actions,
+.rc2-form .rc31-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rc31-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #829bb4;
+  border-radius: 0.5rem;
+  background: #f0f6fb;
+  color: #19354d;
+  text-align: start;
+}
+
+.rc31-picker-trigger[aria-expanded="true"] {
+  border-color: #08766b;
+  background: #ecf8f5;
+}
+
+.rc31-picker-trigger:disabled {
+  color: #526576;
+  background: #eff2f6;
+}
+
+.rc31-picker-trigger span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rc31-picker-chevron {
+  flex: 0 0 0.5rem;
+  height: 0.5rem;
+  transform: translateY(-0.12rem) rotate(45deg);
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+}
+
+.rc31-picker-clear {
+  color: #21536c;
+  background: transparent;
+  border: 0;
+  padding: 0.55rem 0.25rem;
+}
+
+.rc31-confirmation-details {
+  overflow-wrap: anywhere;
+}
+
+.rc31-confirmation-details dt {
+  font-weight: 650;
+}
+
+.rc31-confirmation-details dd {
+  margin: 0 0 0.6rem;
 }
 
 .rc22-options {
@@ -138,12 +204,15 @@
   border: 1px solid #cfdeee;
   border-radius: 0.5rem;
   padding: 0.35rem;
+  margin-top: 0.35rem;
 }
 
 .rc22-options ul {
   list-style: none;
   margin: 0;
   padding: 0;
+  max-height: 15rem;
+  overflow: auto;
 }
 
 .rc22-options li {

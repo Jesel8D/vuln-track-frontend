@@ -27,10 +27,17 @@ test("RC2.3 searches the local official dataset and applies a physical reference
     .getByRole("button", { name: "Registrar dispositivo", exact: true })
     .click();
   await page.locator("select[name=device_type]").selectOption("server");
-  await page.getByLabel("Fabricante del equipo").fill("Dell");
   await page
     .getByText("Consultar referencias CPE de hardware", { exact: true })
     .click();
+  await page
+    .getByRole("button", { name: "Buscar fabricante físico", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Buscar fabricante físico" })
+    .fill("del");
+  await page.getByRole("option", { name: "dell", exact: true }).click();
+  await page.getByRole("button", { name: /referencia del modelo/ }).click();
   await page
     .getByRole("combobox", { name: /referencia del modelo/ })
     .fill("r740");
@@ -41,27 +48,39 @@ test("RC2.3 searches the local official dataset and applies a physical reference
   await page.getByLabel(/administrativa$/).fill("Laboratorio RC2.3");
   await page.getByLabel("Componente principal").selectOption("software");
   await page
+    .getByRole("button", { name: "Buscar fabricante CPE", exact: true })
+    .click();
+  await page
     .getByRole("combobox", { name: "Buscar fabricante CPE" })
     .fill("apa");
   await page.getByRole("option", { name: "apache", exact: true }).click();
   await page
+    .getByRole("button", { name: "Buscar producto CPE", exact: true })
+    .click();
+  await page
     .getByRole("combobox", { name: "Buscar producto CPE" })
     .fill("http");
   await page.getByRole("option", { name: /\shttp_server$/ }).click();
-  await page.getByRole("combobox", { name: /catalogada/ }).click();
+  await page
+    .getByRole("button", { name: "Buscar versión catalogada", exact: true })
+    .click();
   await page
     .getByRole("listbox", { name: /catalogada/ })
     .getByRole("option")
     .filter({ hasNotText: "Deprecada" })
     .first()
     .click();
-  await page.getByRole("combobox", { name: "Buscar CPE exacto" }).click();
+  await page
+    .getByRole("button", { name: "Buscar CPE exacto", exact: true })
+    .click();
   await page
     .getByRole("option", { name: /^cpe:2\.3:a:apache:http_server:/ })
     .first()
     .click();
   await expect(
-    page.getByText(/API oficial de NVD|Diccionario CPE de NVD/),
+    page
+      .locator(".rc22-cpe-result")
+      .getByText(/API oficial de NVD|Diccionario CPE de NVD/),
   ).toBeVisible();
   await page
     .getByRole("checkbox", { name: /corresponden al equipo observado/ })

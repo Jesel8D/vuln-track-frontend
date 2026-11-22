@@ -134,9 +134,15 @@ test("RC3 keeps prior CVE, compares a conflict and confirms the new observed fir
   await page.getByRole("button", { name: "Buscar nueva identidad" }).click();
   await page.getByLabel("Fuente del catálogo").selectOption("fixture");
   await page
+    .getByRole("button", { name: "Buscar fabricante CPE", exact: true })
+    .click();
+  await page
     .getByRole("combobox", { name: "Buscar fabricante CPE" })
     .fill("cis");
   await page.getByRole("option", { name: "cisco", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Buscar producto CPE", exact: true })
+    .click();
   await page
     .getByRole("combobox", { name: "Buscar producto CPE" })
     .fill("rv340");
@@ -144,10 +150,15 @@ test("RC3 keeps prior CVE, compares a conflict and confirms the new observed fir
     .getByRole("option", { name: /small_business_rv340_firmware/ })
     .click();
   await page
+    .getByRole("button", { name: "Buscar versión catalogada", exact: true })
+    .click();
+  await page
     .getByRole("combobox", { name: "Buscar versión catalogada" })
     .fill("1.0.1.16");
   await page.getByRole("option", { name: "1.0.1.16", exact: true }).click();
-  await page.getByRole("combobox", { name: "Buscar CPE exacto" }).click();
+  await page
+    .getByRole("button", { name: "Buscar CPE exacto", exact: true })
+    .click();
   await page
     .getByRole("option", {
       name: /cpe:2\.3:o:cisco:small_business_rv340_firmware:1\.0\.1\.16/,

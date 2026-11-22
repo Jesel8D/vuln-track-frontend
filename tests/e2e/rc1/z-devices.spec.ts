@@ -37,7 +37,9 @@ test("RC2 device registration, CPE, CVE, review, history and four viewports", as
     await page
       .getByRole("button", { name: "Registrar dispositivo", exact: true })
       .click();
-    await page.getByRole("button", { name: "Registrar sin CPE" }).click();
+    await page
+      .getByRole("button", { name: "Registrar sin identificación CPE" })
+      .click();
     await page
       .getByRole("combobox", { name: "Tipo de dispositivo", exact: true })
       .selectOption(type);
