@@ -17,7 +17,11 @@ import { useWorkspace } from "../features/v2/WorkspaceContext";
 import { V2CveAnalysis } from "../features/v2/V2CveAnalysis";
 import { ApplicationTargets } from "../features/v2/ApplicationTargets";
 import { errorText } from "../services/api";
-import type { CpeCandidate, Technology } from "../types/v2";
+import type {
+  ApplicationCpeScope,
+  CpeCandidate,
+  Technology,
+} from "../types/v2";
 
 function TechnologyCard({
   workspaceId,
@@ -36,6 +40,11 @@ function TechnologyCard({
   const cache = useQueryClient();
   const [searchText, setSearchText] = useState(technology.product);
   const [submittedSearch, setSubmittedSearch] = useState("");
+  const [scope, setScope] = useState<ApplicationCpeScope>({
+    part: "a",
+    mode: "live",
+  });
+  const [offset, setOffset] = useState(0);
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(
     null,
   );
@@ -57,12 +66,24 @@ function TechnologyCard({
       technology.id,
       "cpe",
       submittedSearch,
+      scope.part,
+      scope.mode,
+      offset,
       queryVersion,
     ],
     queryFn: ({ signal }) =>
-      api.searchV2Cpe(workspaceId, applicationId, submittedSearch, signal),
+      api.searchV2Cpe(
+        workspaceId,
+        applicationId,
+        technology.id,
+        submittedSearch,
+        scope,
+        offset,
+        signal,
+      ),
     enabled: submittedSearch.length >= 2,
     staleTime: 30_000,
+    retry: false,
   });
   const confirm = useMutation({
     mutationFn: (candidate: CpeCandidate) =>
@@ -71,7 +92,9 @@ function TechnologyCard({
         applicationId,
         technology.id,
         candidate.cpe_name_id,
+        candidate.cpe_name,
         technology.selected_cpe,
+        scope,
       ),
     onSuccess: async () => {
       setMessage("CPE confirmado por el usuario.");
@@ -85,11 +108,23 @@ function TechnologyCard({
   const isConfirmed =
     technology.confidence === "user_confirmed" &&
     Boolean(technology.selected_cpe);
+  function changeScope(next: ApplicationCpeScope) {
+    setScope(next);
+    setSubmittedSearch("");
+    setSelectedCandidate(null);
+    setMessage(null);
+  }
+
+  function changePage(nextOffset: number) {
+    setOffset(nextOffset);
+    setSelectedCandidate(null);
+    setMessage(null);
+  }
+
   const runSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (searchText.trim().length < 2) return;
-    setMessage(null);
-    setSelectedCandidate(null);
+    changePage(0);
     setQueryVersion((version) => version + 1);
     setSubmittedSearch(searchText.trim());
   };
@@ -139,6 +174,43 @@ function TechnologyCard({
       {activeApplication ? (
         <div className="v2-cpe-search-area">
           <form className="v2-cpe-search-form" onSubmit={runSearch}>
+            <div className="v2-cpe-filters">
+              <label>
+                Tipo de CPE
+                <select
+                  disabled={confirm.isPending}
+                  value={scope.part}
+                  onChange={(event) =>
+                    changeScope({
+                      ...scope,
+                      part: event.target.value as ApplicationCpeScope["part"],
+                    })
+                  }
+                >
+                  <option value="a">Aplicación (a)</option>
+                  <option value="o">Sistema operativo o firmware (o)</option>
+                  <option value="h">Hardware (h)</option>
+                </select>
+              </label>
+              <label>
+                Fuente CPE
+                <select
+                  disabled={confirm.isPending}
+                  value={scope.mode}
+                  onChange={(event) =>
+                    changeScope({
+                      ...scope,
+                      mode: event.target.value as ApplicationCpeScope["mode"],
+                    })
+                  }
+                >
+                  <option value="live">Catálogo oficial sincronizado</option>
+                  <option value="fixture">
+                    Captura de demostración (fixture)
+                  </option>
+                </select>
+              </label>
+            </div>
             <label htmlFor={`cpe-search-${technology.id}`}>
               {isConfirmed
                 ? "Buscar otro candidato para reemplazar la selección"
@@ -159,7 +231,11 @@ function TechnologyCard({
               <button
                 className="v2-secondary-button"
                 type="submit"
-                disabled={searchText.trim().length < 2 || candidates.isFetching}
+                disabled={
+                  searchText.trim().length < 2 ||
+                  candidates.isFetching ||
+                  confirm.isPending
+                }
               >
                 Buscar
               </button>
@@ -168,7 +244,7 @@ function TechnologyCard({
           {submittedSearch && (
             <div className="v2-candidate-results">
               {candidates.isPending || candidates.isFetching ? (
-                <p className="v2-loading">Consultando NVD…</p>
+                <p className="v2-loading">Consultando el catálogo CPE…</p>
               ) : candidates.isError ? (
                 <div className="v2-error-inline" role="alert">
                   <CircleAlert size={16} />
@@ -182,17 +258,20 @@ function TechnologyCard({
                 </div>
               ) : candidates.data.items.length === 0 ? (
                 <p className="v2-no-candidates">
-                  NVD no devolvió candidatos para esta búsqueda. Revisa el
-                  nombre del producto o registra la versión correcta.
+                  Sin candidatos compatibles con la tecnología y el tipo de CPE
+                  seleccionados.
                 </p>
               ) : (
                 <>
                   <div className="v2-candidate-source">
-                    {candidates.data.page.total} candidatos · catálogo
-                    consultado{" "}
-                    {new Date(candidates.data.source_timestamp).toLocaleString(
-                      "es-MX",
-                    )}
+                    {candidates.data.page.total}{" "}
+                    {candidates.data.page.total === 1
+                      ? "candidato"
+                      : "candidatos"}{" "}
+                    ·{" "}
+                    {scope.mode === "fixture"
+                      ? "Captura fixture"
+                      : "Catálogo oficial sincronizado"}
                   </div>
                   <fieldset className="v2-candidate-list">
                     <legend>
@@ -233,10 +312,49 @@ function TechnologyCard({
                       </label>
                     ))}
                   </fieldset>
+                  {candidates.data.page.total > candidates.data.page.limit && (
+                    <div className="v2-pagination">
+                      <span>
+                        Página{" "}
+                        {1 + Math.floor(offset / candidates.data.page.limit)} de{" "}
+                        {Math.ceil(
+                          candidates.data.page.total /
+                            candidates.data.page.limit,
+                        )}
+                      </span>
+                      <div>
+                        <button
+                          type="button"
+                          className="v2-secondary-button"
+                          disabled={!offset || confirm.isPending}
+                          onClick={() =>
+                            changePage(
+                              Math.max(0, offset - candidates.data.page.limit),
+                            )
+                          }
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          className="v2-secondary-button"
+                          disabled={
+                            offset + candidates.data.page.limit >=
+                              candidates.data.page.total || confirm.isPending
+                          }
+                          onClick={() =>
+                            changePage(offset + candidates.data.page.limit)
+                          }
+                        >
+                          Siguiente
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className="v2-confirm-cpe-row">
                     <p>
-                      El backend valida que la versión del CPE coincida con la
-                      versión registrada.
+                      Se valida el tipo, fabricante, producto y versión del CPE
+                      contra la tecnología registrada.
                     </p>
                     {canWrite ? (
                       <button

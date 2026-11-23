@@ -18,6 +18,7 @@ import type {
   Token,
   User,
 } from "../types/api";
+import type { ApplicationCpeScope } from "../types/v2";
 import {
   isApplicationList,
   isApplicationTargetList,
@@ -451,14 +452,18 @@ export class ApiClient {
   searchV2Cpe(
     workspaceId: string,
     applicationId: string,
+    technologyId: string,
     query: string,
+    scope: ApplicationCpeScope,
+    offset: number,
     signal?: AbortSignal,
   ) {
     const params = new URLSearchParams({
       query,
-      product_query: query,
+      technology_id: technologyId,
+      ...scope,
       limit: "10",
-      offset: "0",
+      offset: String(offset),
     });
     return this.checked(
       `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/cpe-candidates?${params}`,
@@ -471,7 +476,9 @@ export class ApiClient {
     applicationId: string,
     technologyId: string,
     cpeNameId: string,
+    expectedCpeName: string,
     expectedSelectedCpe: string | null,
+    scope: ApplicationCpeScope,
   ) {
     return this.checked(
       `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/technologies/${encodeURIComponent(technologyId)}/cpe`,
@@ -480,7 +487,9 @@ export class ApiClient {
         method: "PUT",
         body: {
           cpe_name_id: cpeNameId,
+          expected_cpe_name: expectedCpeName,
           expected_selected_cpe: expectedSelectedCpe,
+          ...scope,
         },
       },
     );

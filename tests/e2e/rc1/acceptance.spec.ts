@@ -148,6 +148,8 @@ test("A: application, URL, explicit CPE, worker CVE, review, recommendations and
   const technologyHTTP = await technologyResponse;
   expect(technologyHTTP.status()).toBe(201);
   const technology = await technologyHTTP.json();
+  await page.getByLabel("Tipo de CPE").selectOption("o");
+  await page.getByLabel("Fuente CPE").selectOption("fixture");
   await page
     .getByLabel("Buscar candidatos en el catálogo CPE de NVD")
     .fill("RV340");
