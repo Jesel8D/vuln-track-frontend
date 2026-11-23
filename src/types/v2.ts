@@ -67,6 +67,11 @@ export interface CpeCandidateList {
   source_timestamp: string;
 }
 
+export interface ApplicationCpeScope {
+  part: "a" | "o" | "h";
+  mode: "live" | "fixture";
+}
+
 export type V2AnalysisStatus = "queued" | "running" | "completed" | "failed";
 export type V2Coverage = "complete" | "partial" | null;
 

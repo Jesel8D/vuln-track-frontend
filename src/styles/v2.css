@@ -2311,10 +2311,30 @@
   display: grid;
   gap: 8px;
 }
-.v2-cpe-search-form > label {
+.v2-cpe-search-form > label,
+.v2-cpe-filters label {
   color: #4a5a70;
   font-size: 11px;
   font-weight: 600;
+}
+.v2-cpe-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 215px), 1fr));
+  gap: 8px;
+  max-width: 620px;
+}
+.v2-cpe-filters label {
+  display: grid;
+  gap: 4px;
+}
+.v2-cpe-filters select {
+  min-height: 36px;
+  padding: 4px 8px;
+  color: #25374e;
+  border: 1px solid #aebdce;
+  border-radius: 5px;
+  background: #fff;
+  font-size: 12px;
 }
 .v2-cpe-search-row {
   display: flex;
