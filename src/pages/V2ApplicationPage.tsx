@@ -1,3 +1,4 @@
+import { useDialogFocus } from "../components/useDialogFocus";
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -478,6 +479,7 @@ export function V2ApplicationPage() {
   const { current } = useWorkspace();
   const cache = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
+  const dialogRef = useDialogFocus(formOpen, setFormOpen);
   const [product, setProduct] = useState("");
   const [vendor, setVendor] = useState("");
   const [version, setVersion] = useState("");
@@ -626,7 +628,8 @@ export function V2ApplicationPage() {
             <p className="v2-eyebrow">IDENTIFICACIÓN DE PRODUCTOS</p>
             <h2>Tecnologías</h2>
             <p>
-              Confirma cada producto y versión antes de consultar CVE en NVD.
+              Confirma cada producto y versión antes de consultar las capturas
+              CVE de demostración.
             </p>
           </div>
           {canWrite && (
@@ -718,6 +721,7 @@ export function V2ApplicationPage() {
         >
           <section
             className="v2-modal"
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="technology-dialog-title"
