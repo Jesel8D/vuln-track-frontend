@@ -1343,8 +1343,8 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
       <section className="v2-panel rc2-panel">
         <h2>Consultas CVE del dispositivo</h2>
         <p>
-          La consulta usa el CPE confirmado. Los CVE relacionados requieren
-          evaluación humana.
+          La consulta usa capturas fixture y el CPE confirmado. CVE externo está
+          aplazado. Los resultados no confirman vulnerabilidades.
         </p>
         {active && (
           <button
@@ -1352,7 +1352,7 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
             disabled={!row.current_identification || analyze.isPending}
             onClick={() => analyze.mutate(crypto.randomUUID())}
           >
-            Consultar CVE
+            Consultar CVE de demostración
           </button>
         )}
         <Feedback

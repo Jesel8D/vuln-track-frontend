@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, expect, it, vi } from "vitest";
 import { V2DashboardPage } from "../../src/pages/V2DashboardPage";
@@ -45,6 +45,12 @@ it.each([
         </MemoryRouter>
       </QueryClientProvider>,
     );
+    expect(mock.dashboard).not.toHaveBeenCalled();
+    const details = screen
+      .getByText("Consultas CVE de demostración e historial guardado")
+      .closest("details")!;
+    details.open = true;
+    fireEvent(details, new Event("toggle"));
     await waitFor(() =>
       expect(mock.dashboard).toHaveBeenCalledWith(
         "workspace",
@@ -54,7 +60,7 @@ it.each([
     );
     expect(
       screen.getByRole("combobox", {
-        name: "Procedencia de las consultas del dashboard",
+        name: "Procedencia de las consultas históricas",
       }),
     ).toHaveValue(expected);
   },

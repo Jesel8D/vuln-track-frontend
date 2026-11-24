@@ -179,7 +179,7 @@ function LayoutContent() {
         </main>
         <footer className="v2-footer">
           <span>VulnTrack · Inventario y revisión de tecnologías</span>
-          <span>NVD 2.0 · Revisión humana</span>
+          <span>CPE local · CVE de demostración</span>
         </footer>
       </div>
     </div>

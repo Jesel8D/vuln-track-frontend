@@ -400,8 +400,8 @@ export function V2CveAnalysis({
     <section className="v2-cve-analysis">
       <div className="v2-cve-analysis-heading">
         <div>
-          <p className="v2-eyebrow">CONSULTA DE VULNERABILIDADES</p>
-          <h3>CVEs en NVD</h3>
+          <p className="v2-eyebrow">CONSULTA CVE DE DEMOSTRACIÓN</p>
+          <h3>Capturas CVE e historial</h3>
           <p>
             {selectedCpe ? <code>{selectedCpe}</code> : "Sin CPE seleccionado"}
           </p>
@@ -423,7 +423,9 @@ export function V2CveAnalysis({
             ) : (
               <>
                 <Play size={15} />{" "}
-                {runId ? "Nueva consulta CVE" : "Consultar CVE"}
+                {runId
+                  ? "Nueva consulta de demostración"
+                  : "Consultar CVE de demostración"}
               </>
             )}
           </button>
@@ -444,8 +446,8 @@ export function V2CveAnalysis({
         </p>
       ) : (
         <p className="v2-analysis-help">
-          NVD consulta vulnerabilidades conocidas. No se escanea la URL y la
-          coincidencia no confirma una vulnerabilidad.
+          La consulta usa capturas fixture. CVE externo está aplazado. No se
+          escanea la URL ni se confirma una vulnerabilidad.
         </p>
       )}
       {notice && (
