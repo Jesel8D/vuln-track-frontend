@@ -89,7 +89,7 @@ it("shows separate units, exact fractions, exclusions and recorded provenance", 
   expect(within(technologies).getByText("1 / 3")).toBeVisible();
   expect(within(technologies).getByText("33.3%")).toBeVisible();
   expect(
-    within(technologies).getByText(/procedencia.*no está registrada/),
+    within(technologies).getByText(/procedencia se consulta por tecnología/),
   ).toBeVisible();
   expect(screen.getByText(/no demuestra una vulnerabilidad/)).toBeVisible();
   expect(within(devices).getByRole("link")).toHaveAttribute(

@@ -1,3 +1,4 @@
+import { Pagination } from "../features/v2/Pagination";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CircleAlert, History } from "lucide-react";
@@ -25,13 +26,26 @@ export function V2AnalysisHistoryPage() {
   const { current } = useWorkspace();
   const canWrite = current?.role === "owner" || current?.role === "editor";
   const [offset, setOffset] = useState(0);
+  const [applicationOffset, setApplicationOffset] = useState(0);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedApplicationId, setSelectedApplicationId] = useState<
     string | null
   >(null);
   const applications = useQuery({
-    queryKey: ["v2", user?.id, current?.workspace_id, "applications"],
-    queryFn: ({ signal }) => api.applications(current!.workspace_id, signal),
+    queryKey: [
+      "v2",
+      user?.id,
+      current?.workspace_id,
+      "applications",
+      routeApplicationId,
+      applicationOffset,
+    ],
+    queryFn: ({ signal }) =>
+      api.applications(current!.workspace_id, signal, {
+        limit: 20,
+        offset: applicationOffset,
+        applicationId: routeApplicationId,
+      }),
     enabled: Boolean(current),
   });
   const applicationId =
@@ -167,6 +181,7 @@ export function V2AnalysisHistoryPage() {
               value={applicationId}
               onChange={(event) => {
                 setOffset(0);
+                setSelectedRunId(null);
                 setSelectedApplicationId(event.target.value);
               }}
             >
@@ -178,6 +193,17 @@ export function V2AnalysisHistoryPage() {
             </select>
           </label>
         ) : null}
+        {!routeApplicationId && (
+          <Pagination
+            page={applications.data?.page}
+            onChange={(next) => {
+              setApplicationOffset(next);
+              setSelectedApplicationId(null);
+              setSelectedRunId(null);
+              setOffset(0);
+            }}
+          />
+        )}
         {result?.items.length ? (
           <>
             <div className="v2-table-wrap">

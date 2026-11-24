@@ -257,7 +257,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #768399;
+  color: var(--secondary);
   font-size: 11px;
 }
 .v2-top-workspace select {
@@ -1033,7 +1033,7 @@
   font-family: "IBM Plex Mono", monospace;
 }
 .v2-muted {
-  color: var(--muted);
+  color: var(--secondary);
 }
 .v2-empty-inline {
   display: grid;
@@ -1348,7 +1348,7 @@
   font-size: 14px;
 }
 .v2-cve-analysis-heading p:not(.v2-eyebrow) {
-  color: #75849a;
+  color: var(--secondary);
   font-size: 10px;
 }
 .v2-cve-analysis-heading code {
@@ -2685,4 +2685,16 @@
 
 .v2-inventory-coverage {
   padding: clamp(14px, 2vw, 22px);
+}
+.v2-cpe-provenance {
+  margin-block: 0.75rem;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.v2-cpe-provenance dt {
+  color: var(--secondary);
+  margin-top: 0.5rem;
+}
+.v2-cpe-provenance dd {
+  margin-inline-start: 0;
 }

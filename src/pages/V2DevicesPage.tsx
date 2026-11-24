@@ -1,3 +1,4 @@
+import { Pagination } from "../features/v2/Pagination";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useParams } from "react-router";
@@ -25,6 +26,14 @@ type Identification = {
   mode: Mode;
   created_at: string;
   reason: string;
+  identity_generation?: number;
+  catalog_evidence?: {
+    source?: string;
+    observed_vendor?: string | null;
+    observed_product?: string | null;
+    observed_version?: string | null;
+    nvd_modified?: string;
+  } | null;
 };
 type Device = {
   id: string;
@@ -111,10 +120,52 @@ const base = (workspace: string) =>
   "/api/v2/workspaces/" + encodeURIComponent(workspace) + "/devices";
 export const modeLabel = (mode?: string) =>
   mode === "live"
-    ? "NVD en vivo"
+    ? "Fuente oficial NVD"
     : mode === "fixture"
       ? "NVD de fixture"
       : "Procedencia sin registrar";
+
+function IdentificationDetails({
+  entry,
+  currentId,
+}: {
+  entry: Identification;
+  currentId?: string;
+}) {
+  const evidence = entry.catalog_evidence;
+  return (
+    <dl className="v2-cpe-provenance">
+      <dt>Estado</dt>
+      <dd>{entry.id === currentId ? "Vigente" : "Histórica"}</dd>
+      <dt>Fuente</dt>
+      <dd>
+        {modeLabel(entry.mode)}
+        {evidence?.source ? ` · ${evidence.source}` : ""}
+      </dd>
+      <dt>UUID del registro CPE</dt>
+      <dd>
+        <code>{entry.cpe_name_id}</code>
+      </dd>
+      <dt>Fabricante y producto observados</dt>
+      <dd>
+        {evidence?.observed_vendor ?? "No registrado"} ·{" "}
+        {evidence?.observed_product ?? "No registrado"}
+      </dd>
+      <dt>Versión observada al confirmar</dt>
+      <dd>{evidence?.observed_version ?? "No registrada"}</dd>
+      <dt>Confirmación</dt>
+      <dd>{time(entry.created_at)}</dd>
+      <dt>Motivo</dt>
+      <dd>{entry.reason}</dd>
+      <dt>Evidencia del catálogo</dt>
+      <dd>
+        {evidence?.nvd_modified
+          ? `Registro modificado por NVD: ${time(evidence.nvd_modified)}`
+          : "No registrada"}
+      </dd>
+    </dl>
+  );
+}
 
 function Feedback({
   pending,
@@ -132,40 +183,6 @@ function Feedback({
       </p>
     );
   return pending ? <p role="status">{label}</p> : null;
-}
-
-function Pagination({
-  page,
-  onChange,
-}: {
-  page?: Page<unknown>["page"];
-  onChange: (offset: number) => void;
-}) {
-  if (!page || page.total <= page.limit) return null;
-  return (
-    <div className="rc2-actions">
-      <button
-        className="v2-secondary-button"
-        type="button"
-        disabled={page.offset === 0}
-        onClick={() => onChange(Math.max(0, page.offset - page.limit))}
-      >
-        Anterior
-      </button>
-      <span>
-        Página {1 + Math.floor(page.offset / page.limit)} de{" "}
-        {Math.ceil(page.total / page.limit)}
-      </span>
-      <button
-        className="v2-secondary-button"
-        type="button"
-        disabled={page.offset + page.limit >= page.total}
-        onClick={() => onChange(page.offset + page.limit)}
-      >
-        Siguiente
-      </button>
-    </div>
-  );
 }
 
 function DeviceForm({
@@ -1090,12 +1107,16 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
       <section className="v2-panel rc2-panel">
         <h2>Identificación CPE</h2>
         {row.current_identification ? (
-          <p>
+          <div>
             <strong>CPE vigente</strong>
             <br />
             <code>{row.current_identification.cpe_name}</code> ·{" "}
             {modeLabel(row.current_identification.mode)}
-          </p>
+            <IdentificationDetails
+              entry={row.current_identification}
+              currentId={row.current_identification.id}
+            />
+          </div>
         ) : (
           <p role="status">
             {row.cpe_review_state === "needs_review"
@@ -1240,6 +1261,10 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
               {entry.reason}
               <br />
               <code>{entry.cpe_name}</code>
+              <IdentificationDetails
+                entry={entry}
+                currentId={row.current_identification?.id}
+              />
             </li>
           ))}
         </ul>

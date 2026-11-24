@@ -19,6 +19,8 @@ import type {
   V2Coverage,
   TargetReadiness,
   InventoryCoverage,
+  CpeConfirmation,
+  CpeConfirmationList,
 } from "../types/v2";
 
 export function isInventoryCoverage(
@@ -54,7 +56,9 @@ export function isInventoryCoverage(
     count(modes.fixture) &&
     count(modes.unknown) &&
     modes.live + modes.fixture + modes.unknown === d.confirmed &&
-    t.confirmation_provenance === "not_recorded"
+    ["not_recorded", "per_confirmation"].includes(
+      String(t.confirmation_provenance),
+    )
   );
 }
 
@@ -113,7 +117,9 @@ export function isApplicationList(value: unknown): value is ApplicationList {
     record(value) &&
     Array.isArray(value.items) &&
     value.items.length <= 100 &&
-    value.items.every(isApplication)
+    value.items.every(isApplication) &&
+    (value.page === undefined ||
+      isInventoryPage(value.page, value.items.length))
   );
 }
 
@@ -332,8 +338,87 @@ export function isTechnologyList(value: unknown): value is TechnologyList {
         ["unconfirmed", "user_confirmed", "high", "medium", "low"].includes(
           String(technology.confidence),
         ) &&
-        timestamp(technology.observed_at),
+        timestamp(technology.observed_at) &&
+        (technology.cpe_confirmation == null ||
+          isCpeConfirmation(technology.cpe_confirmation)),
+    ) &&
+    (value.page === undefined ||
+      isInventoryPage(value.page, value.items.length)) &&
+    (value.summary === undefined ||
+      (record(value.summary) &&
+        nonnegativeInteger(value.summary.confirmed_cpe) &&
+        record(value.page) &&
+        (value.summary.confirmed_cpe as number) <=
+          (value.page.total as number)))
+  );
+}
+
+function isInventoryPage(value: unknown, length: number) {
+  return (
+    record(value) &&
+    nonnegativeInteger(value.total) &&
+    nonnegativeInteger(value.offset) &&
+    nonnegativeInteger(value.limit) &&
+    value.limit > 0 &&
+    value.limit <= 100 &&
+    length <= value.limit &&
+    length <= Math.max(0, value.total - value.offset)
+  );
+}
+
+export function isCpeConfirmation(v: unknown): v is CpeConfirmation {
+  if (!record(v)) return false;
+  if (v.catalog_evidence !== undefined) {
+    const e = v.catalog_evidence;
+    if (
+      !record(e) ||
+      (e.record !== undefined &&
+        (!record(e.record) ||
+          !bounded(e.record.vendor, 1024) ||
+          !bounded(e.record.product, 1024) ||
+          !bounded(e.record.version, 1024) ||
+          !timestamp(e.record.nvd_modified))) ||
+      (e.feed != null &&
+        (!record(e.feed) ||
+          !timestamp(e.feed.source_modified) ||
+          !bounded(e.feed.digest, 64) ||
+          !bounded(e.feed.status, 40)))
     )
+      return false;
+  }
+  return (
+    record(v) &&
+    typeof v.id === "string" &&
+    uuid.test(v.id) &&
+    typeof v.cpe_name_id === "string" &&
+    uuid.test(v.cpe_name_id) &&
+    bounded(v.cpe_name, 1024) &&
+    ["live", "fixture"].includes(String(v.mode)) &&
+    ["nvd-api", "nvd-feed", "nvd-captured-fixture"].includes(
+      String(v.source),
+    ) &&
+    (v.mode === "fixture") === (v.source === "nvd-captured-fixture") &&
+    (v.observed_vendor === null || bounded(v.observed_vendor, 160)) &&
+    bounded(v.observed_product, 160) &&
+    bounded(v.observed_version, 120) &&
+    timestamp(v.confirmed_at) &&
+    (v.reason === null || bounded(v.reason, 500)) &&
+    (v.evidence === null || bounded(v.evidence, 2000)) &&
+    (v.is_current === undefined || typeof v.is_current === "boolean")
+  );
+}
+
+export function isCpeConfirmationList(v: unknown): v is CpeConfirmationList {
+  return (
+    record(v) &&
+    Array.isArray(v.items) &&
+    v.items.every(isCpeConfirmation) &&
+    v.items.every((x) => typeof x.is_current === "boolean") &&
+    isInventoryPage(v.page, v.items.length) &&
+    (v.current_confirmation_id === null ||
+      (typeof v.current_confirmation_id === "string" &&
+        uuid.test(v.current_confirmation_id))) &&
+    (v.legacy_provenance === null || v.legacy_provenance === "not_recorded")
   );
 }
 

@@ -1,3 +1,4 @@
+import { Pagination } from "../features/v2/Pagination";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
@@ -20,13 +21,26 @@ export function V2ApplicationsPage() {
   const canWrite = current?.role === "owner" || current?.role === "editor";
   const cache = useQueryClient();
   const [search, setSearch] = useState("");
+  const [offset, setOffset] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const query = useQuery({
-    queryKey: ["v2", user?.id, current?.workspace_id, "applications"],
-    queryFn: ({ signal }) => api.applications(current!.workspace_id, signal),
+    queryKey: [
+      "v2",
+      user?.id,
+      current?.workspace_id,
+      "applications",
+      search,
+      offset,
+    ],
+    queryFn: ({ signal }) =>
+      api.applications(current!.workspace_id, signal, {
+        q: search,
+        limit: 20,
+        offset,
+      }),
     enabled: Boolean(current),
   });
   const targetsQuery = useQuery({
@@ -55,6 +69,7 @@ export function V2ApplicationsPage() {
       await cache.invalidateQueries({
         queryKey: ["v2", user?.id, current?.workspace_id, "applications"],
       });
+      setOffset(0);
       setFormOpen(false);
       setName("");
       setDescription("");
@@ -62,15 +77,7 @@ export function V2ApplicationsPage() {
     },
     onError: (error) => setMessage(errorText(error)),
   });
-  const applications = useMemo(
-    () =>
-      (query.data?.items ?? []).filter((application) =>
-        `${application.name} ${application.description ?? ""} ${(targetsByApplication.get(application.id) ?? []).map((target) => target.url).join(" ")}`
-          .toLocaleLowerCase()
-          .includes(search.toLocaleLowerCase()),
-      ),
-    [query.data?.items, search, targetsByApplication],
-  );
+  const applications = query.data?.items ?? [];
 
   if (!current)
     return (
@@ -103,11 +110,11 @@ export function V2ApplicationsPage() {
       <section className="v2-stat-grid v2-compact-stats">
         <article className="v2-stat-card">
           <div className="v2-stat-top">
-            <span>APLICACIONES VISIBLES</span>
+            <span>APLICACIONES EN EL FILTRO</span>
             <AppWindow size={20} />
           </div>
-          <strong>{query.data?.items.length ?? "—"}</strong>
-          <p>Hasta 100 registros devueltos por la API</p>
+          <strong>{query.data?.page?.total ?? "—"}</strong>
+          <p>Total del filtro; hasta 20 por página</p>
         </article>
         <article className="v2-stat-card">
           <div className="v2-stat-top">
@@ -131,9 +138,7 @@ export function V2ApplicationsPage() {
             <p className="v2-eyebrow">INVENTARIO</p>
             <h2>
               Aplicaciones registradas{" "}
-              <span className="v2-count">
-                {query.data?.items.length ?? "—"}
-              </span>
+              <span className="v2-count">{query.data?.page?.total ?? "—"}</span>
             </h2>
             <p>La lista corresponde únicamente a {current.name}.</p>
           </div>
@@ -145,7 +150,10 @@ export function V2ApplicationsPage() {
               aria-label="Buscar aplicaciones"
               placeholder="Buscar por nombre o descripción"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setOffset(0);
+              }}
             />
           </label>
         </div>
@@ -279,7 +287,7 @@ export function V2ApplicationsPage() {
                         : (targetsByApplication.get(application.id) ?? [])
                               .length
                           ? `${(targetsByApplication.get(application.id) ?? []).filter((target) => target.authorization_status === "approved").length} de ${(targetsByApplication.get(application.id) ?? []).length} con declaración vigente`
-                          : "Sin destinos"}
+                          : "Sin destinos en la página de URLs"}
                     </td>
                     <td>
                       {new Date(application.updated_at).toLocaleDateString(
@@ -315,6 +323,7 @@ export function V2ApplicationsPage() {
             )}
           </div>
         )}
+        <Pagination page={query.data?.page} onChange={setOffset} />
       </section>
       {formOpen && (
         <div
