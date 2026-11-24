@@ -13,13 +13,16 @@ describe("Aviso de procedencia NVD", () => {
     ).toHaveTextContent("NVD de fixture");
   });
 
-  it("identifica modo live y conserva la distinción de resultados previos", () => {
-    vi.stubEnv("VITE_NVD_MODE", "live");
-    render(<FixtureNotice />);
-    const notice = screen.getByRole("note", { name: "Fuente NVD" });
-    expect(notice).toHaveTextContent("NVD en vivo");
-    expect(notice).toHaveTextContent(
-      "Los resultados previos conservan su procedencia",
-    );
-  });
+  it.each(["live", "", "disabled"])(
+    "no anuncia integración activa con configuración %s",
+    (mode) => {
+      vi.stubEnv("VITE_NVD_MODE", mode);
+      render(<FixtureNotice />);
+      const notice = screen.getByRole("note", { name: "Fuente NVD" });
+      expect(notice).toHaveTextContent("Consultas CVE externas aplazadas");
+      expect(notice).toHaveTextContent(
+        "Los resultados previos conservan su procedencia",
+      );
+    },
+  );
 });

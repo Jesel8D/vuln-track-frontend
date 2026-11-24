@@ -256,14 +256,15 @@ export function V2DashboardPage() {
       ? runtimeMode
       : "unknown",
   );
+  const [historyOpen, setHistoryOpen] = useState(false);
   const canWrite = current?.role === "owner" || current?.role === "editor";
   const query = useQuery({
     queryKey: ["v2", user?.id, current?.workspace_id, "dashboard", mode],
     queryFn: ({ signal }) =>
       api.v2Dashboard(current!.workspace_id, signal, mode),
-    enabled: Boolean(current),
+    enabled: Boolean(current) && historyOpen,
     refetchOnMount: "always",
-    refetchInterval: 30_000,
+    refetchInterval: historyOpen ? 30_000 : false,
   });
 
   if (isPending)
@@ -286,37 +287,6 @@ export function V2DashboardPage() {
 
   return (
     <div className="v2-page">
-      {mode && (
-        <section
-          className="v2-panel rc2-panel"
-          aria-label="Alcance del dashboard"
-        >
-          <p>
-            Las consultas CVE de este resumen cubren aplicaciones web. El
-            historial de dispositivos se consulta en{" "}
-            <Link to="/dispositivos">Dispositivos</Link>.
-          </p>
-          <label>
-            Procedencia de las consultas del dashboard
-            <select
-              value={mode}
-              onChange={(event) => {
-                const value = event.target.value;
-                if (
-                  value === "fixture" ||
-                  value === "live" ||
-                  value === "unknown"
-                )
-                  setMode(value);
-              }}
-            >
-              <option value="fixture">NVD de fixture</option>
-              <option value="live">NVD en vivo</option>
-              <option value="unknown">Procedencia sin registrar</option>
-            </select>
-          </label>
-        </section>
-      )}
       <section className="v2-security-banner">
         <div className="v2-security-icon">
           <ShieldCheck size={26} />
@@ -324,13 +294,12 @@ export function V2DashboardPage() {
         <div className="v2-security-copy">
           <p className="v2-eyebrow">
             ESTADO DEL WORKSPACE{" "}
-            <span className="v2-pill v2-pill-info">NVD bajo demanda</span>
+            <span className="v2-pill v2-pill-info">Inventario local</span>
           </p>
           <h1>{current.name}</h1>
           <p>
-            {query.data
-              ? `${query.data.summary.authorized_targets_total} de ${query.data.summary.targets_total} URLs con declaración vigente; control sin verificar.`
-              : "Consulta CVE por CPE y versión confirmados."}
+            Inventario y cobertura CPE del workspace. Las consultas CVE externas
+            están aplazadas.
           </p>
         </div>
         {canWrite ? (
@@ -348,219 +317,268 @@ export function V2DashboardPage() {
         workspaceName={current.name}
       />
 
-      {query.isPending ? (
-        <div className="v2-loading" role="status">
-          Cargando resumen del workspace…
-        </div>
-      ) : query.isError ? (
-        <section className="v2-panel v2-error-panel">
-          <CircleAlert />
-          <div>
-            <h2>No se pudo cargar el dashboard</h2>
-            <p>{errorText(query.error)}</p>
-            <button
-              className="v2-secondary-button"
-              onClick={() => void query.refetch()}
-            >
-              Reintentar
-            </button>
-          </div>
-        </section>
-      ) : (
-        <>
-          <section className="v2-stat-grid" aria-label="Resumen del workspace">
-            <article className="v2-stat-card">
-              <div className="v2-stat-top">
-                <span>APLICACIONES ACTIVAS</span>
-                <Boxes size={20} />
-              </div>
-              <strong>{query.data.summary.applications_total}</strong>
-              <p>Dentro del workspace</p>
-            </article>
-            <article className="v2-stat-card">
-              <div className="v2-stat-top">
-                <span>CONSULTAS NVD</span>
-                <History size={20} />
-              </div>
-              <strong>{query.data.summary.analyses_total}</strong>
-              <p>
-                {query.data.summary.analyses_in_progress} en curso ·{" "}
-                {query.data.summary.analyses_failed} con errores
-              </p>
-            </article>
-            <article className="v2-stat-card">
-              <div className="v2-stat-top">
-                <span>HALLAZGOS ABIERTOS</span>
-                <Fingerprint size={20} />
-              </div>
-              <strong>{query.data.summary.findings_open}</strong>
-              <p>En últimas consultas completadas por tecnología</p>
-            </article>
-            <article className="v2-stat-card v2-stat-alert">
-              <div className="v2-stat-top">
-                <span>CRÍTICOS Y ALTOS ABIERTOS</span>
-                <TriangleAlert size={20} />
-              </div>
-              <strong>
-                {query.data.summary.critical_open +
-                  query.data.summary.high_open}
-              </strong>
-              <p>
-                {query.data.summary.critical_open} críticos ·{" "}
-                {query.data.summary.high_open} altos
-              </p>
-            </article>
+      <details
+        className="v2-panel rc2-panel"
+        open={historyOpen}
+        onToggle={(event) => setHistoryOpen(event.currentTarget.open)}
+      >
+        <summary>Consultas CVE de demostración e historial guardado</summary>
+        <p>
+          Estos resultados no son una evaluación real de vulnerabilidades ni de
+          riesgo actual. Un CPE oficial no convierte un resultado fixture en
+          real. Una consulta vacía no demuestra ausencia de vulnerabilidades.
+        </p>
+        {mode && (
+          <section
+            className="v2-panel rc2-panel"
+            aria-label="Alcance del dashboard"
+          >
+            <p>
+              Las consultas CVE de este resumen cubren aplicaciones web. El
+              historial de dispositivos se consulta en{" "}
+              <Link to="/dispositivos">Dispositivos</Link>.
+            </p>
+            <label>
+              Procedencia de las consultas históricas
+              <select
+                value={mode}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (
+                    value === "fixture" ||
+                    value === "live" ||
+                    value === "unknown"
+                  )
+                    setMode(value);
+                }}
+              >
+                <option value="fixture">NVD de fixture</option>
+                <option value="live">Origen NVD registrado (histórico)</option>
+                <option value="unknown">Procedencia sin registrar</option>
+              </select>
+            </label>
           </section>
-
-          <section className="v2-dashboard-target-note">
-            <ShieldCheck size={17} />
-            <span>
-              {query.data.summary.targets_total} destinos registrados ·{" "}
-              {query.data.summary.authorized_targets_total} con declaración
-              vigente registrada.
-            </span>
-            <strong>
-              Una declaración no acredita control técnico del dominio.
-            </strong>
-            <Link to="/aplicaciones">
-              Ver inventario <ArrowRight size={14} />
-            </Link>
-          </section>
-
-          <div className="v2-dashboard-grid">
-            <SeverityDistribution data={query.data} />
-            <AnalysisTrend data={query.data} />
-          </div>
-
-          <div className="v2-dashboard-grid v2-dashboard-bottom">
-            <section className="v2-panel v2-dashboard-panel">
-              <div className="v2-panel-heading">
-                <div>
-                  <p className="v2-eyebrow">EJECUCIONES RECIENTES</p>
-                  <h2>Consultas NVD</h2>
+        )}
+        {historyOpen &&
+          (query.isPending ? (
+            <div className="v2-loading" role="status">
+              Cargando resumen del workspace…
+            </div>
+          ) : query.isError ? (
+            <section className="v2-panel v2-error-panel">
+              <CircleAlert />
+              <div>
+                <h2>No se pudo cargar el dashboard</h2>
+                <p>{errorText(query.error)}</p>
+                <button
+                  className="v2-secondary-button"
+                  onClick={() => void query.refetch()}
+                >
+                  Reintentar
+                </button>
+              </div>
+            </section>
+          ) : (
+            <>
+              <section
+                className="v2-stat-grid"
+                aria-label="Resumen del workspace"
+              >
+                <article className="v2-stat-card">
+                  <div className="v2-stat-top">
+                    <span>APLICACIONES ACTIVAS</span>
+                    <Boxes size={20} />
+                  </div>
+                  <strong>{query.data.summary.applications_total}</strong>
+                  <p>Dentro del workspace</p>
+                </article>
+                <article className="v2-stat-card">
+                  <div className="v2-stat-top">
+                    <span>CONSULTAS NVD</span>
+                    <History size={20} />
+                  </div>
+                  <strong>{query.data.summary.analyses_total}</strong>
                   <p>
-                    Hasta cinco ejecuciones guardadas de la procedencia
-                    seleccionada.
+                    {query.data.summary.analyses_in_progress} en curso ·{" "}
+                    {query.data.summary.analyses_failed} con errores
                   </p>
-                </div>
-                <Link className="v2-text-link" to="/historial">
-                  Ver historial <ArrowRight size={15} />
+                </article>
+                <article className="v2-stat-card">
+                  <div className="v2-stat-top">
+                    <span>HALLAZGOS ABIERTOS</span>
+                    <Fingerprint size={20} />
+                  </div>
+                  <strong>{query.data.summary.findings_open}</strong>
+                  <p>En últimas consultas completadas por tecnología</p>
+                </article>
+                <article className="v2-stat-card v2-stat-alert">
+                  <div className="v2-stat-top">
+                    <span>CRÍTICOS Y ALTOS ABIERTOS</span>
+                    <TriangleAlert size={20} />
+                  </div>
+                  <strong>
+                    {query.data.summary.critical_open +
+                      query.data.summary.high_open}
+                  </strong>
+                  <p>
+                    {query.data.summary.critical_open} críticos ·{" "}
+                    {query.data.summary.high_open} altos
+                  </p>
+                </article>
+              </section>
+
+              <section className="v2-dashboard-target-note">
+                <ShieldCheck size={17} />
+                <span>
+                  {query.data.summary.targets_total} destinos registrados ·{" "}
+                  {query.data.summary.authorized_targets_total} con declaración
+                  vigente registrada.
+                </span>
+                <strong>
+                  Una declaración no acredita control técnico del dominio.
+                </strong>
+                <Link to="/aplicaciones">
+                  Ver inventario <ArrowRight size={14} />
                 </Link>
-              </div>
-              {query.data.recent_analyses.length ? (
-                <div className="v2-table-wrap">
-                  <table className="v2-table">
-                    <thead>
-                      <tr>
-                        <th>APLICACIÓN / TECNOLOGÍA</th>
-                        <th>FECHA</th>
-                        <th>ESTADO</th>
-                        <th>CVEs</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {query.data.recent_analyses.map((run) => (
-                        <tr key={run.id}>
-                          <td>
-                            <Link to={`/aplicaciones/${run.application_id}`}>
-                              <strong>{run.application_name}</strong>
-                            </Link>
-                            <small>
-                              {run.product} {run.version}
-                            </small>
-                            <CveQueryStatus value={run} />
-                          </td>
-                          <td>{formatDate(run.created_at)}</td>
-                          <td>
-                            <span
-                              className={`v2-status v2-status-${run.status}`}
-                            >
-                              {statusLabel(run.status)}
-                            </span>
-                          </td>
-                          <td>{run.finding_count}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="v2-empty-inline">
-                  <History size={21} />
-                  <p>Aún no hay consultas NVD.</p>
-                  <Link className="v2-secondary-button" to="/aplicaciones">
-                    Abrir aplicaciones
-                  </Link>
-                </div>
-              )}
-            </section>
+              </section>
 
-            <section className="v2-panel v2-dashboard-panel">
-              <div className="v2-panel-heading">
-                <div>
-                  <p className="v2-eyebrow">PRIORIDAD</p>
-                  <h2>Hallazgos abiertos</h2>
-                  <p>Última consulta completada por tecnología.</p>
-                </div>
-                <TriangleAlert size={20} />
+              <div className="v2-dashboard-grid">
+                <SeverityDistribution data={query.data} />
+                <AnalysisTrend data={query.data} />
               </div>
-              {query.data.priority_findings.length ? (
-                <div className="v2-priority-list">
-                  {query.data.priority_findings.map((finding) => (
-                    <article className="v2-priority-card" key={finding.id}>
-                      <div className="v2-finding-top">
-                        <span
-                          className={`v2-severity v2-severity-${finding.severity ?? "unknown"}`}
-                        >
-                          {(finding.severity ?? "unknown").toUpperCase()}
-                        </span>
-                        <a
-                          className="v2-cve-link"
-                          href={`https://nvd.nist.gov/vuln/detail/${encodeURIComponent(finding.external_id)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {finding.external_id} <ExternalLink size={12} />
-                        </a>
-                      </div>
-                      <h3>{finding.title || finding.external_id}</h3>
+
+              <div className="v2-dashboard-grid v2-dashboard-bottom">
+                <section className="v2-panel v2-dashboard-panel">
+                  <div className="v2-panel-heading">
+                    <div>
+                      <p className="v2-eyebrow">EJECUCIONES RECIENTES</p>
+                      <h2>Consultas NVD</h2>
                       <p>
-                        {finding.product} {finding.version} ·{" "}
-                        {finding.application_name}
+                        Hasta cinco ejecuciones guardadas de la procedencia
+                        seleccionada.
                       </p>
-                      {finding.analysis && (
-                        <CveQueryStatus value={finding.analysis} />
-                      )}
-                      <Link
-                        to={`/aplicaciones/${finding.application_id}/historial`}
-                      >
-                        Ver historial y revisar <ArrowRight size={13} />
+                    </div>
+                    <Link className="v2-text-link" to="/historial">
+                      Ver historial <ArrowRight size={15} />
+                    </Link>
+                  </div>
+                  {query.data.recent_analyses.length ? (
+                    <div className="v2-table-wrap">
+                      <table className="v2-table">
+                        <thead>
+                          <tr>
+                            <th>APLICACIÓN / TECNOLOGÍA</th>
+                            <th>FECHA</th>
+                            <th>ESTADO</th>
+                            <th>CVEs</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {query.data.recent_analyses.map((run) => (
+                            <tr key={run.id}>
+                              <td>
+                                <Link
+                                  to={`/aplicaciones/${run.application_id}`}
+                                >
+                                  <strong>{run.application_name}</strong>
+                                </Link>
+                                <small>
+                                  {run.product} {run.version}
+                                </small>
+                                <CveQueryStatus value={run} />
+                              </td>
+                              <td>{formatDate(run.created_at)}</td>
+                              <td>
+                                <span
+                                  className={`v2-status v2-status-${run.status}`}
+                                >
+                                  {statusLabel(run.status)}
+                                </span>
+                              </td>
+                              <td>{run.finding_count}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="v2-empty-inline">
+                      <History size={21} />
+                      <p>Aún no hay consultas NVD.</p>
+                      <Link className="v2-secondary-button" to="/aplicaciones">
+                        Abrir aplicaciones
                       </Link>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="v2-empty-inline">
-                  <ShieldCheck size={21} />
-                  <p>
-                    No hay hallazgos abiertos en el último análisis completado
-                    por tecnología.
+                    </div>
+                  )}
+                </section>
+
+                <section className="v2-panel v2-dashboard-panel">
+                  <div className="v2-panel-heading">
+                    <div>
+                      <p className="v2-eyebrow">PRIORIDAD</p>
+                      <h2>Hallazgos abiertos</h2>
+                      <p>Última consulta completada por tecnología.</p>
+                    </div>
+                    <TriangleAlert size={20} />
+                  </div>
+                  {query.data.priority_findings.length ? (
+                    <div className="v2-priority-list">
+                      {query.data.priority_findings.map((finding) => (
+                        <article className="v2-priority-card" key={finding.id}>
+                          <div className="v2-finding-top">
+                            <span
+                              className={`v2-severity v2-severity-${finding.severity ?? "unknown"}`}
+                            >
+                              {(finding.severity ?? "unknown").toUpperCase()}
+                            </span>
+                            <a
+                              className="v2-cve-link"
+                              href={`https://nvd.nist.gov/vuln/detail/${encodeURIComponent(finding.external_id)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {finding.external_id} <ExternalLink size={12} />
+                            </a>
+                          </div>
+                          <h3>{finding.title || finding.external_id}</h3>
+                          <p>
+                            {finding.product} {finding.version} ·{" "}
+                            {finding.application_name}
+                          </p>
+                          {finding.analysis && (
+                            <CveQueryStatus value={finding.analysis} />
+                          )}
+                          <Link
+                            to={`/aplicaciones/${finding.application_id}/historial`}
+                          >
+                            Ver historial y revisar <ArrowRight size={13} />
+                          </Link>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="v2-empty-inline">
+                      <ShieldCheck size={21} />
+                      <p>
+                        No hay hallazgos abiertos en el último análisis
+                        completado por tecnología.
+                      </p>
+                    </div>
+                  )}
+                  <p className="v2-panel-footnote">
+                    El dashboard no confirma aplicabilidad. Revisa la evidencia
+                    antes de tomar medidas.
                   </p>
-                </div>
-              )}
-              <p className="v2-panel-footnote">
-                El dashboard no confirma aplicabilidad. Revisa la evidencia
-                antes de tomar medidas.
+                </section>
+              </div>
+              <p className="v2-dashboard-footnote">
+                Los hallazgos corresponden a la ejecución completada más
+                reciente de cada tecnología; el mismo CVE en productos distintos
+                se cuenta por separado. Las consultas NVD no escanean la URL.
               </p>
-            </section>
-          </div>
-          <p className="v2-dashboard-footnote">
-            Los hallazgos corresponden a la ejecución completada más reciente de
-            cada tecnología; el mismo CVE en productos distintos se cuenta por
-            separado. Las consultas NVD no escanean la URL.
-          </p>
-        </>
-      )}
+            </>
+          ))}
+      </details>
     </div>
   );
 }

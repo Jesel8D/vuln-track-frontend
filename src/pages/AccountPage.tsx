@@ -7,7 +7,7 @@ export function AccountPage() {
       <header>
         <p className="v2-eyebrow">ACCESO PERSONAL</p>
         <h1>Mi cuenta</h1>
-        <p>Tu identidad verificada por VulnTrack.</p>
+        <p>Tu cuenta autenticada en VulnTrack.</p>
       </header>
       <section className="v2-panel account-panel">
         <div className="account-heading">
