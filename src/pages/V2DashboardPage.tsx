@@ -1,3 +1,4 @@
+import { CveQueryStatus } from "../features/v2/CveQueryStatus";
 import { useState } from "react";
 import { InventoryAnalyticsPanel } from "../features/v2/InventoryAnalytics";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -134,8 +135,12 @@ function SeverityDistribution({ data }: { data: V2Dashboard }) {
       <div className="v2-panel-heading">
         <div>
           <p className="v2-eyebrow">HALLAZGOS ABIERTOS</p>
-          <h2>Severidad del último análisis por tecnología</h2>
-          <p>Cuenta cada CVE una vez dentro de cada tecnología.</p>
+          <h2>Severidad de la última consulta guardada por tecnología</h2>
+          <p>
+            Cuenta cada CVE una vez por tecnología. Son resultados guardados:
+            pueden ser históricos, parciales o de vigencia desconocida; no
+            representan riesgo actual confirmado.
+          </p>
         </div>
         <TriangleAlert size={20} />
       </div>
@@ -460,6 +465,7 @@ export function V2DashboardPage() {
                             <small>
                               {run.product} {run.version}
                             </small>
+                            <CveQueryStatus value={run} />
                           </td>
                           <td>{formatDate(run.created_at)}</td>
                           <td>
@@ -519,6 +525,9 @@ export function V2DashboardPage() {
                         {finding.product} {finding.version} ·{" "}
                         {finding.application_name}
                       </p>
+                      {finding.analysis && (
+                        <CveQueryStatus value={finding.analysis} />
+                      )}
                       <Link
                         to={`/aplicaciones/${finding.application_id}/historial`}
                       >

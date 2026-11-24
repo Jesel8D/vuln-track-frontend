@@ -1,3 +1,4 @@
+import type { CveReliability } from "./cveReliability";
 export interface Workspace {
   workspace_id: string;
   name: string;
@@ -96,6 +97,8 @@ export interface CpeConfirmationList {
 }
 
 export interface Technology {
+  current_cve_query_state?:
+    "recorded" | "not_queried" | "unknown" | "identification_required";
   id: string;
   product: string;
   vendor: string | null;
@@ -149,7 +152,7 @@ export interface AnalysisAccepted {
   stored_count?: number;
 }
 
-export interface AnalysisRun extends AnalysisAccepted {
+export interface AnalysisRun extends AnalysisAccepted, CveReliability {
   nvd_mode?: "fixture" | "live" | "unknown";
   status: V2AnalysisStatus;
   coverage: V2Coverage;
@@ -165,7 +168,7 @@ export interface AnalysisRun extends AnalysisAccepted {
   completed_at: string | null;
 }
 
-export interface HistoricalAnalysis {
+export interface HistoricalAnalysis extends CveReliability {
   id: string;
   application_id: string;
   technology_id: string | null;
@@ -296,22 +299,25 @@ export interface V2Dashboard {
     severity_unknown: number;
     technologies_with_completed_analysis: number;
   };
-  recent_analyses: Array<{
-    id: string;
-    application_id: string;
-    application_name: string;
-    technology_id: string;
-    product: string;
-    version: string;
-    status: V2AnalysisStatus;
-    coverage: V2Coverage;
-    stored_count: number;
-    warning_codes: string[];
-    created_at: string;
-    completed_at: string | null;
-    finding_count: number;
-  }>;
+  recent_analyses: Array<
+    CveReliability & {
+      id: string;
+      application_id: string;
+      application_name: string;
+      technology_id: string;
+      product: string;
+      version: string;
+      status: V2AnalysisStatus;
+      coverage: V2Coverage;
+      stored_count: number;
+      warning_codes: string[];
+      created_at: string;
+      completed_at: string | null;
+      finding_count: number;
+    }
+  >;
   priority_findings: Array<{
+    analysis?: CveReliability;
     id: string;
     external_id: string;
     title: string | null;

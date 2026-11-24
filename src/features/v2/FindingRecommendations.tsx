@@ -112,6 +112,10 @@ export function FindingRecommendations({
           <span>{query.data.page?.total ?? query.data.items.length}</span>
         )}
       </summary>
+      <p>
+        El estado de una medida es seguimiento declarado; no acredita una
+        remediación verificada.
+      </p>
       {open && (
         <label>
           Filtrar medidas por estado
