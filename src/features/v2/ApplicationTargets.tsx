@@ -7,21 +7,27 @@ import {
   targetAuthorizationLabel,
   targetControlLabel,
 } from "./targetAuthorization";
+import { TargetVerification } from "./TargetVerification";
 import type { ApplicationTarget } from "../../types/v2";
 
 export function ApplicationTargets({
   workspaceId,
   applicationId,
+  applicationStatus,
   canWrite,
 }: {
   workspaceId: string;
   applicationId: string;
+  applicationStatus: "active" | "archived";
   canWrite: boolean;
 }) {
   const { api, user } = useAuth();
   const cache = useQueryClient();
   const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
+  const [verificationTarget, setVerificationTarget] = useState<string | null>(
+    null,
+  );
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [expiryDate, setExpiryDate] = useState("");
   const [reference, setReference] = useState("");
@@ -241,6 +247,30 @@ export function ApplicationTargets({
                   </form>
                 </details>
               )}
+              <details
+                onToggle={(event) => {
+                  if (event.currentTarget.open)
+                    setVerificationTarget(target.id);
+                  else
+                    setVerificationTarget((id) =>
+                      id === target.id ? null : id,
+                    );
+                }}
+              >
+                <summary>Desafío de control (sin comprobación remota)</summary>
+                {verificationTarget === target.id && (
+                  <TargetVerification
+                    key={`${workspaceId}/${target.id}`}
+                    workspaceId={workspaceId}
+                    target={{
+                      ...target,
+                      application_id: applicationId,
+                      application_status: applicationStatus,
+                    }}
+                    canWrite={canWrite}
+                  />
+                )}
+              </details>
             </article>
           ))}
           {!targets.data.items.length && (

@@ -26,7 +26,7 @@ export function TargetVerification({
   canWrite,
 }: {
   workspaceId: string;
-  target: WorkspaceTarget;
+  target: Omit<WorkspaceTarget, "application_name">;
   canWrite: boolean;
 }) {
   const { api, user } = useAuth();

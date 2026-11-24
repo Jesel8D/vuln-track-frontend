@@ -1,16 +1,15 @@
 import { LogOut, UserRound } from "lucide-react";
 import { useAuth } from "../features/auth/context";
-import { Button, PageHeading } from "../components/ui";
 export function AccountPage() {
   const { user, logout } = useAuth();
   return (
-    <>
-      <PageHeading
-        eyebrow="ACCESO PERSONAL"
-        title="Mi cuenta"
-        description="Tu identidad verificada por VulnTrack."
-      />
-      <section className="panel account-panel">
+    <div className="v2-page v2-account">
+      <header>
+        <p className="v2-eyebrow">ACCESO PERSONAL</p>
+        <h1>Mi cuenta</h1>
+        <p>Tu identidad verificada por VulnTrack.</p>
+      </header>
+      <section className="v2-panel account-panel">
         <div className="account-heading">
           <span className="large-avatar">
             <UserRound size={30} />
@@ -20,7 +19,7 @@ export function AccountPage() {
             <p>Sesión autenticada</p>
           </div>
         </div>
-        <dl className="detail-grid">
+        <dl className="v2-account-details">
           <div>
             <dt>Usuario</dt>
             <dd>{user?.username}</dd>
@@ -30,9 +29,9 @@ export function AccountPage() {
             <dd className="mono">{user?.id}</dd>
           </div>
         </dl>
-        <div className="notice">
-          Tu acceso comprende tus propios activos. Esta instalación no ofrece
-          funciones administrativas ni edición de perfil.
+        <div className="v2-panel-footnote">
+          Tu acceso depende de tus membresías y roles de workspace. Esta
+          instalación no ofrece funciones administrativas ni edición de perfil.
         </div>
         <div className="account-logout">
           <div>
@@ -42,12 +41,12 @@ export function AccountPage() {
               revoca en el servidor y conserva su expiración original.
             </p>
           </div>
-          <Button variant="secondary" onClick={logout}>
+          <button className="v2-secondary-button" onClick={logout}>
             <LogOut size={17} />
             Cerrar sesión
-          </Button>
+          </button>
         </div>
       </section>
-    </>
+    </div>
   );
 }

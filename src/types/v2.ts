@@ -5,6 +5,24 @@ export interface Workspace {
   created_at: string;
 }
 
+export interface CoverageCounts {
+  total: number;
+  confirmed: number;
+  pending: number;
+  needs_review: number;
+  excluded_inactive: number;
+}
+
+export interface InventoryCoverage {
+  workspace_id: string;
+  scope: "active";
+  devices: CoverageCounts & {
+    without_version: number;
+    confirmed_by_mode: { live: number; fixture: number; unknown: number };
+  };
+  technologies: CoverageCounts & { confirmation_provenance: "not_recorded" };
+}
+
 export interface WorkspaceCreated {
   id: string;
   name: string;

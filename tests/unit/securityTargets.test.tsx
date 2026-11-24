@@ -16,18 +16,16 @@ const mock = vi.hoisted(() => ({
     v2WorkspaceTargets: vi.fn(),
     v2Targets: vi.fn(),
     authorizeV2Target: vi.fn(),
-    v2Verifications: vi
-      .fn()
-      .mockResolvedValue({
-        items: [],
-        remote_verification_available: false,
-        execution_enabled: false,
-        blocking_reasons: [
-          "PUBLIC_EGRESS_UNPROVEN",
-          "OPERATIONAL_DNS_UNAVAILABLE",
-          "WEB_EXECUTOR_DISABLED",
-        ],
-      }),
+    v2Verifications: vi.fn().mockResolvedValue({
+      items: [],
+      remote_verification_available: false,
+      execution_enabled: false,
+      blocking_reasons: [
+        "PUBLIC_EGRESS_UNPROVEN",
+        "OPERATIONAL_DNS_UNAVAILABLE",
+        "WEB_EXECUTOR_DISABLED",
+      ],
+    }),
   },
 }));
 vi.mock("../../src/features/auth/context", () => ({
@@ -228,6 +226,7 @@ it("withdraws a declaration through the existing API with its version and a reas
   mock.api.authorizeV2Target.mockResolvedValue(target("rejected"));
   mount(
     <ApplicationTargets
+      applicationStatus="active"
       workspaceId="workspace"
       applicationId="application"
       canWrite
@@ -259,6 +258,7 @@ it("does not offer declaration writes to a viewer", async () => {
   mock.api.v2Targets.mockResolvedValue({ items: [target("approved")] });
   mount(
     <ApplicationTargets
+      applicationStatus="active"
       workspaceId="workspace"
       applicationId="application"
       canWrite={false}
@@ -266,4 +266,32 @@ it("does not offer declaration writes to a viewer", async () => {
   );
   await screen.findByText("Pendiente de verificación técnica");
   expect(screen.queryByText("Retirar declaración")).not.toBeInTheDocument();
+});
+
+it("preserves challenge metadata on application targets and loads it only when opened", async () => {
+  mock.api.v2Targets.mockResolvedValue({ items: [target("approved")] });
+  mount(
+    <ApplicationTargets
+      workspaceId="workspace"
+      applicationId="application"
+      applicationStatus="active"
+      canWrite={false}
+    />,
+  );
+  const summary = await screen.findByText(
+    "Desafío de control (sin comprobación remota)",
+    { exact: true },
+  );
+  expect(mock.api.v2Verifications).not.toHaveBeenCalled();
+  await userEvent.setup().click(summary);
+  expect(
+    await screen.findByRole("region", { name: "Verificación del destino" }),
+  ).toBeVisible();
+  expect(mock.api.v2Verifications).toHaveBeenCalled();
+  expect(
+    screen.queryByRole("button", { name: "Emitir desafío" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Iniciar análisis Baseline" }),
+  ).not.toBeInTheDocument();
 });

@@ -13,7 +13,8 @@ const measure =
   "DEMO: revisar el aviso capturado y las condiciones AND; no concluir vulnerabilidad en un sistema real.";
 const save = (value: ReturnType<typeof state>) =>
   writeFileSync(statePath, JSON.stringify(value, null, 2), { mode: 0o600 });
-const evidence = "test-results-rc1/evidence/create";
+const evidence =
+  process.env.RC1_EVIDENCE_DIR ?? "test-results-rc1/evidence/create";
 mkdirSync(evidence, { recursive: true });
 test.describe.configure({ mode: "serial" });
 
@@ -430,10 +431,16 @@ test("D: real challenge revocation and expiry never enable web execution", async
     return approved.json();
   };
   const current = await create("DEMO RC1 revocación", 3600);
-  await navigate(page, "Análisis de seguridad");
-  const select = page.getByRole("combobox", { name: "Destino registrado" });
-  await select.selectOption(current.id);
-  const region = page.getByRole("region", { name: "Verificación del destino" });
+  await page.goto("/aplicaciones/" + data.dataset.application.id);
+  const targetCard = page
+    .locator(".v2-target-item")
+    .filter({ hasText: current.label });
+  await targetCard
+    .getByText("Desafío de control (sin comprobación remota)", { exact: true })
+    .click();
+  let region = targetCard.getByRole("region", {
+    name: "Verificación del destino",
+  });
   const issueResponse = page.waitForResponse(
     (r) =>
       r.url().endsWith("/verifications") && r.request().method() === "POST",
@@ -468,8 +475,16 @@ test("D: real challenge revocation and expiry never enable web execution", async
     .getByRole("button", { name: "Cerrar sesión", exact: true })
     .click();
   headers.Authorization = await login(page, data.primary);
-  await navigate(page, "Análisis de seguridad");
-  await select.selectOption(temporary.id);
+  await page.goto("/aplicaciones/" + data.dataset.application.id);
+  const temporaryCard = page
+    .locator(".v2-target-item")
+    .filter({ hasText: temporary.label });
+  await temporaryCard
+    .getByText("Desafío de control (sin comprobación remota)", { exact: true })
+    .click();
+  region = temporaryCard.getByRole("region", {
+    name: "Verificación del destino",
+  });
   await region.getByRole("button", { name: "Emitir desafío" }).click();
   await expect(
     region.getByText("Desafío pendiente", { exact: true }),
@@ -494,7 +509,7 @@ test("D: real challenge revocation and expiry never enable web execution", async
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Iniciar análisis Baseline" }),
-  ).toBeDisabled();
+  ).toHaveCount(0);
   await page.screenshot({
     path: evidence + "/security-expired-1440.png",
     fullPage: true,
@@ -517,13 +532,13 @@ for (const width of [375, 768, 1280, 1440]) {
         ),
       ).toBeTruthy();
     }
-    const token = await login(page, data.primary);
+    await login(page, data.primary);
     for (const [name, path] of [
       ["dashboard", "/"],
       ["applications", "/aplicaciones"],
       ["technology-cpe", "/aplicaciones/" + data.dataset.application.id],
       ["history", "/historial"],
-      ["security", "/analisis"],
+      ["account", "/cuenta"],
     ]) {
       if (name === "technology-cpe") {
         await navigate(page, "Aplicaciones");
@@ -538,7 +553,7 @@ for (const width of [375, 768, 1280, 1440]) {
           dashboard: "Dashboard",
           applications: "Aplicaciones",
           history: "Historial",
-          security: "Análisis de seguridad",
+          account: "Mi cuenta",
         };
         await navigate(page, labels[name]);
       }
@@ -546,11 +561,22 @@ for (const width of [375, 768, 1280, 1440]) {
         new RegExp(path.replaceAll("/", "\\/") + "$"),
       );
       if (name === "technology-cpe") {
+        await page.getByLabel("Tipo de CPE").selectOption("o");
+        await page.getByLabel("Fuente CPE").selectOption("live");
         await page
           .getByLabel("Buscar otro candidato para reemplazar la selección")
           .fill("RV340");
         await page.getByRole("button", { name: "Buscar", exact: true }).click();
         await expect(page.getByRole("radio")).toHaveCount(1);
+        const targetCard = page.locator(".v2-target-item").first();
+        await targetCard
+          .getByText("Desafío de control (sin comprobación remota)", {
+            exact: true,
+          })
+          .click();
+        await expect(
+          targetCard.getByRole("button", { name: "Actualizar verificación" }),
+        ).toBeEnabled();
       }
       if (name === "history") {
         await page
@@ -563,29 +589,6 @@ for (const width of [375, 768, 1280, 1440]) {
         await expect(
           page.getByText(data.dataset.measure, { exact: true }),
         ).toBeVisible();
-      }
-      if (name === "security") {
-        const targets = await page.request.get(
-          api +
-            `/api/v2/workspaces/${data.workspace}/applications/${data.dataset.application.id}/targets`,
-          { headers: { Authorization: token } },
-        );
-        expect(targets.status()).toBe(200);
-        const expired = (await targets.json()).items.find(
-          (target: { label: string }) =>
-            target.label === "DEMO RC1 caducidad real",
-        );
-        await page
-          .getByRole("combobox", { name: "Destino registrado" })
-          .selectOption(expired.id);
-        await expect(
-          page
-            .getByRole("region", { name: "Verificación del destino" })
-            .getByText("Desafío expirado", { exact: true }),
-        ).toBeVisible();
-        await expect(
-          page.getByRole("button", { name: "Iniciar análisis Baseline" }),
-        ).toBeDisabled();
       }
       await page.waitForLoadState("networkidle");
       await page.screenshot({

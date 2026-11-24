@@ -535,6 +535,7 @@ export function V2ApplicationPage() {
       <ApplicationTargets
         workspaceId={current.workspace_id}
         applicationId={application.id}
+        applicationStatus={application.status}
         canWrite={canWrite}
       />
       <section className="v2-detail-summary">
@@ -553,8 +554,8 @@ export function V2ApplicationPage() {
           </strong>
         </article>
         <article>
-          <span>ESTADO DE ESCANEO</span>
-          <strong className="v2-detail-small">ZAP pendiente</strong>
+          <span>IDENTIFICACIÓN</span>
+          <strong className="v2-detail-small">Confirmación humana</strong>
         </article>
       </section>
       <section className="v2-panel v2-detail-panel">

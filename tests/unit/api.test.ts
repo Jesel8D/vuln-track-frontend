@@ -170,3 +170,38 @@ describe("API transport boundary", () => {
     expect(() => new ApiClient(base, () => null, vi.fn())).toThrow();
   });
 });
+
+it("rejects coverage from a different workspace even if its counts are valid", async () => {
+  const requested = "10000000-0000-4000-8000-000000000001";
+  const other = "10000000-0000-4000-8000-000000000002";
+  const counts = {
+    total: 0,
+    confirmed: 0,
+    pending: 0,
+    needs_review: 0,
+    excluded_inactive: 0,
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      response({
+        workspace_id: other,
+        scope: "active",
+        devices: {
+          ...counts,
+          without_version: 0,
+          confirmed_by_mode: { live: 0, fixture: 0, unknown: 0 },
+        },
+        technologies: { ...counts, confirmation_provenance: "not_recorded" },
+      }),
+    ),
+  );
+  const client = new ApiClient(
+    "http://127.0.0.1:8000",
+    () => "synthetic-token",
+    vi.fn(),
+  );
+  await expect(client.inventoryCoverage(requested)).rejects.toBeInstanceOf(
+    ApiError,
+  );
+});

@@ -6,8 +6,8 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  ScanLine,
   Server,
+  UserRound,
   X,
 } from "lucide-react";
 import { Brand } from "../components/ui";
@@ -22,13 +22,8 @@ const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/dispositivos", label: "Dispositivos", icon: Server, end: false },
   { to: "/aplicaciones", label: "Aplicaciones", icon: Boxes, end: false },
-  {
-    to: "/analisis",
-    label: "Análisis de seguridad",
-    icon: ScanLine,
-    end: false,
-  },
   { to: "/historial", label: "Historial", icon: History, end: false },
+  { to: "/cuenta", label: "Mi cuenta", icon: UserRound, end: false },
 ];
 
 function LayoutContent() {
@@ -56,13 +51,6 @@ function LayoutContent() {
           {label}
         </NavLink>
       ))}
-      <span
-        className="v2-nav-link v2-nav-disabled"
-        aria-disabled="true"
-        title="Seguimiento de hallazgos pendiente de integración"
-      >
-        Seguimiento <small>Pendiente</small>
-      </span>
     </nav>
   );
 
@@ -108,7 +96,7 @@ function LayoutContent() {
         <div className="v2-sidebar-bottom">
           <div className="v2-scope-note">
             <span className="v2-status-dot" />
-            <strong>Consultas NVD bajo demanda</strong>
+            <strong>Inventario e identificación CPE</strong>
             <p>La coincidencia requiere revisar y confirmar el CPE.</p>
           </div>
           <div className="v2-user-row">
@@ -176,7 +164,7 @@ function LayoutContent() {
           <Outlet />
         </main>
         <footer className="v2-footer">
-          <span>VulnTrack · Gestión de seguridad de aplicaciones web</span>
+          <span>VulnTrack · Inventario y revisión de tecnologías</span>
           <span>NVD 2.0 · Revisión humana</span>
         </footer>
       </div>

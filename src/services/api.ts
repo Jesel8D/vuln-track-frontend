@@ -24,6 +24,7 @@ import {
   isApplicationTargetList,
   isWorkspaceTargetList,
   isV2Dashboard,
+  isInventoryCoverage,
   isAnalysisAccepted,
   isAnalysisHistory,
   isAnalysisRun,
@@ -686,6 +687,14 @@ export class ApiClient {
     return this.checked(
       `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/${mode ? "nvd-dashboard/" + mode : "dashboard"}`,
       isV2Dashboard,
+      { signal },
+    );
+  }
+  inventoryCoverage(workspaceId: string, signal?: AbortSignal) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/inventory-coverage`,
+      (value): value is import("../types/v2").InventoryCoverage =>
+        isInventoryCoverage(value) && value.workspace_id === workspaceId,
       { signal },
     );
   }
