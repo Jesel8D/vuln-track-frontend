@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { InventoryAnalyticsPanel } from "../features/v2/InventoryAnalytics";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
@@ -334,6 +335,10 @@ export function V2DashboardPage() {
       </section>
 
       <InventoryCoveragePanel workspaceId={current.workspace_id} />
+      <InventoryAnalyticsPanel
+        workspaceId={current.workspace_id}
+        workspaceName={current.name}
+      />
 
       {query.isPending ? (
         <div className="v2-loading" role="status">

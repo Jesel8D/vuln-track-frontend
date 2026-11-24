@@ -1,0 +1,126 @@
+.v2-inventory-analytics {
+  padding: 22px;
+  min-width: 0;
+}
+.v2-inventory-analytics h2 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+.v2-inventory-analytics p {
+  margin: 12px 0;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.v2-inventory-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+.v2-inventory-controls label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: #475c76;
+}
+.v2-inventory-controls select {
+  width: 100%;
+  min-width: 0;
+  color: #263852;
+  background: #fff;
+  border-color: #b9c7d7;
+}
+.v2-inventory-distribution {
+  display: grid;
+  gap: 12px;
+  margin: 22px 0;
+}
+.v2-inventory-bar-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) 2fr 3ch;
+  align-items: center;
+  gap: 12px;
+}
+.v2-inventory-bar-row > span {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.v2-inventory-track {
+  background: #e6edf5;
+  height: 14px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.v2-inventory-track i {
+  display: block;
+  height: 100%;
+  background: #326da0;
+}
+.v2-inventory-analytics caption {
+  text-align: left;
+  padding: 12px 0;
+  color: #475c76;
+  font-size: 13px;
+  white-space: normal;
+}
+.v2-inventory-analytics th {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.v2-inventory-analytics th[scope="row"] {
+  font-weight: 500;
+}
+.v2-inventory-event-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  padding: 12px 0;
+  list-style: none;
+}
+.v2-inventory-event-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.v2-inventory-event-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.v2-inventory-event-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 20px;
+}
+.v2-inventory-chart-dates {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: #475c76;
+}
+.v2-inventory-analytics details {
+  margin: 20px 0;
+}
+.v2-inventory-analytics summary {
+  cursor: pointer;
+  padding: 8px 0;
+}
+@media (max-width: 760px) {
+  .v2-inventory-analytics {
+    padding: 16px;
+  }
+  .v2-inventory-controls {
+    grid-template-columns: 1fr;
+  }
+  .v2-inventory-bar-row {
+    grid-template-columns: minmax(90px, 1fr) 1fr 3ch;
+    gap: 8px;
+  }
+  .v2-inventory-chart-dates {
+    flex-wrap: wrap;
+  }
+}

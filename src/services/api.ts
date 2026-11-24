@@ -19,6 +19,14 @@ import type {
   User,
 } from "../types/api";
 import type { ApplicationCpeScope } from "../types/v2";
+import type {
+  InventoryDimension,
+  InventoryKind,
+} from "../types/inventoryAnalytics";
+import {
+  isInventoryDistribution,
+  isInventoryEvents,
+} from "./inventoryAnalyticsContract";
 import {
   isApplicationList,
   isCpeConfirmationList,
@@ -756,6 +764,49 @@ export class ApiClient {
       `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/inventory-coverage`,
       (value): value is import("../types/v2").InventoryCoverage =>
         isInventoryCoverage(value) && value.workspace_id === workspaceId,
+      { signal },
+    );
+  }
+  inventoryDistribution(
+    workspaceId: string,
+    kind: InventoryKind,
+    dimension: InventoryDimension,
+    signal?: AbortSignal,
+  ) {
+    const params = new URLSearchParams({
+      inventory_kind: kind,
+      dimension,
+      limit: "10",
+    });
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/inventory-analytics/distribution?${params}`,
+      (
+        value,
+      ): value is import("../types/inventoryAnalytics").InventoryDistribution =>
+        isInventoryDistribution(value) &&
+        value.workspace_id === workspaceId &&
+        value.inventory_kind === kind &&
+        value.dimension === dimension,
+      { signal },
+    );
+  }
+  inventoryEvents(
+    workspaceId: string,
+    kind: InventoryKind,
+    days: 30 | 90,
+    signal?: AbortSignal,
+  ) {
+    const params = new URLSearchParams({
+      inventory_kind: kind,
+      days: String(days),
+    });
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/inventory-analytics/events?${params}`,
+      (value): value is import("../types/inventoryAnalytics").InventoryEvents =>
+        isInventoryEvents(value) &&
+        value.workspace_id === workspaceId &&
+        value.inventory_kind === kind &&
+        value.window.days === days,
       { signal },
     );
   }

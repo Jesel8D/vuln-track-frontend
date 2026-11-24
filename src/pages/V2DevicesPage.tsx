@@ -1,7 +1,7 @@
 import { Pagination } from "../features/v2/Pagination";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../features/auth/context";
 import {
@@ -533,17 +533,36 @@ function Inventory({
   writer: boolean;
 }) {
   const { api, user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const manufacturerKey = searchParams.get("manufacturer_key") ?? "";
+  const modelKey = searchParams.get("model_key") ?? "";
   const [form, setForm] = useState(false);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(() =>
+    ["active", "retired"].includes(searchParams.get("status") ?? "")
+      ? searchParams.get("status")!
+      : "",
+  );
   const [offset, setOffset] = useState(0);
   const list = useQuery({
-    queryKey: ["devices", user?.id, workspace, query, category, status, offset],
+    queryKey: [
+      "devices",
+      user?.id,
+      workspace,
+      query,
+      category,
+      status,
+      offset,
+      manufacturerKey,
+      modelKey,
+    ],
     queryFn: ({ signal }) => {
       const params = new URLSearchParams({ q: query, offset: String(offset) });
       if (category) params.set("device_type", category);
       if (status) params.set("status", status);
+      if (manufacturerKey) params.set("manufacturer_key", manufacturerKey);
+      if (modelKey) params.set("model_key", modelKey);
       return api.request<Page<Device>>(base(workspace) + "?" + params, {
         signal,
       });
@@ -576,6 +595,22 @@ function Inventory({
       )}
       <section className="v2-panel rc2-panel">
         <h2>Inventario de dispositivos</h2>
+        {(manufacturerKey || modelKey) && (
+          <p>
+            Filtro exacto de la gráfica: fabricante {manufacturerKey || "todos"}
+            {modelKey ? ` · modelo ${modelKey}` : ""}.{" "}
+            <button
+              className="v2-text-button"
+              onClick={() => {
+                setSearchParams({});
+                setStatus("");
+                setOffset(0);
+              }}
+            >
+              Quitar filtro exacto
+            </button>
+          </p>
+        )}
         <div className="rc2-fields">
           <label>
             Buscar fabricante o modelo
