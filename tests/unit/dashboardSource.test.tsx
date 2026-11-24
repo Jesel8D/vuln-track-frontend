@@ -18,6 +18,9 @@ vi.mock("../../src/features/v2/WorkspaceContext", () => ({
 vi.mock("../../src/features/v2/InventoryCoverage", () => ({
   InventoryCoveragePanel: () => <p>Cobertura independiente</p>,
 }));
+vi.mock("../../src/features/v2/InventoryAnalytics", () => ({
+  InventoryAnalyticsPanel: () => <p>Analítica independiente</p>,
+}));
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.resetAllMocks();
