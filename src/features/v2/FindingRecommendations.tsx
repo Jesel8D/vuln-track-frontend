@@ -1,3 +1,4 @@
+import { Pagination } from "./Pagination";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, ExternalLink } from "lucide-react";
@@ -39,6 +40,8 @@ export function FindingRecommendations({
   const { api, user } = useAuth();
   const cache = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [status, setStatus] = useState("");
   const [recommendation, setRecommendation] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -51,9 +54,12 @@ export function FindingRecommendations({
     "recommendations",
   ];
   const query = useQuery({
-    queryKey,
+    queryKey: [...queryKey, offset, status],
     queryFn: ({ signal }) =>
-      api.v2Recommendations(workspaceId, applicationId, findingId, signal),
+      api.v2Recommendations(workspaceId, applicationId, findingId, signal, {
+        offset,
+        status,
+      }),
     enabled: open,
   });
   const refresh = () => cache.invalidateQueries({ queryKey });
@@ -64,6 +70,8 @@ export function FindingRecommendations({
         source_url: sourceUrl.trim() || null,
       }),
     onSuccess: async () => {
+      setOffset(0);
+      setStatus("");
       setRecommendation("");
       setSourceUrl("");
       setNotice("Medida agregada al seguimiento.");
@@ -100,8 +108,29 @@ export function FindingRecommendations({
     >
       <summary>
         <CheckCircle2 size={15} /> Medidas de seguimiento
-        {query.data && <span>{query.data.items.length}</span>}
+        {query.data && (
+          <span>{query.data.page?.total ?? query.data.items.length}</span>
+        )}
       </summary>
+      {open && (
+        <label>
+          Filtrar medidas por estado
+          <select
+            value={status}
+            onChange={(event) => {
+              setStatus(event.target.value);
+              setOffset(0);
+              setNotice(null);
+            }}
+          >
+            <option value="">Todos</option>
+            <option value="pending">Pendiente</option>
+            <option value="in_progress">En corrección</option>
+            <option value="fixed">Corregido</option>
+            <option value="accepted_risk">Riesgo aceptado</option>
+          </select>
+        </label>
+      )}
       {query.isPending ? (
         <p className="v2-analysis-help">Cargando medidas…</p>
       ) : query.isError ? (
@@ -160,8 +189,13 @@ export function FindingRecommendations({
             );
           })}
           {!query.data.items.length && (
-            <p className="v2-analysis-help">Aún no hay medidas registradas.</p>
+            <p className="v2-analysis-help">
+              {status
+                ? "No hay medidas con este estado."
+                : "Aún no hay medidas registradas."}
+            </p>
           )}
+          <Pagination page={query.data.page} onChange={setOffset} />
           {canWrite && (
             <form
               className="v2-recommendation-form"

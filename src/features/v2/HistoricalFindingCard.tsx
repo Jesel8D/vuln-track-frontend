@@ -70,6 +70,23 @@ export function HistoricalFindingCard({
         </span>
       </div>
       <h3>{finding.title || finding.external_id}</h3>
+      <p>
+        Hallazgo: <code>{finding.id}</code> · Registrado:{" "}
+        {new Date(finding.observed_at).toLocaleString("es-MX")}
+      </p>
+      <details>
+        <summary>Evidencia guardada del hallazgo</summary>
+        <p>
+          Publicación NVD:{" "}
+          {new Date(finding.published_at).toLocaleString("es-MX")} · Última
+          modificación NVD:{" "}
+          {new Date(finding.last_modified_at).toLocaleString("es-MX")}
+        </p>
+        <pre className="v2-finding-evidence">
+          {JSON.stringify(finding.evidence, null, 2)}
+        </pre>
+      </details>
+
       <p className="v2-finding-description">
         {typeof description?.value === "string"
           ? description.value

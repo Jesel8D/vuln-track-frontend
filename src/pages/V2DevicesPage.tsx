@@ -678,7 +678,7 @@ function Inventory({
   );
 }
 
-function DeviceFindings({
+export function DeviceFindings({
   path,
   run,
   writer,
@@ -688,18 +688,37 @@ function DeviceFindings({
   writer: boolean;
 }) {
   const { api, user } = useAuth();
+  const [offset, setOffset] = useState(0);
   const query = useQuery({
-    queryKey: ["device-findings", user?.id, path, run.id],
+    queryKey: ["device-findings", user?.id, path, run.id, offset],
     queryFn: ({ signal }) =>
       api.request<Page<Finding>>(
-        path + "/analyses/" + run.id + "/findings?limit=100",
+        path + "/analyses/" + run.id + "/findings?limit=20&offset=" + offset,
         { signal },
       ),
   });
   return (
     <div className="rc2-section">
       <h3>Hallazgos de la consulta</h3>
+      <p>
+        Consulta: <code>{run.id}</code> · {time(run.created_at)} ·{" "}
+        {modeLabel(run.mode)}
+      </p>
+      <p>
+        Producto/version del análisis guardado:{" "}
+        {run.evaluated_technology.product_vendor ?? "No registrado"} ·{" "}
+        {run.evaluated_technology.product ?? "No registrado"} ·{" "}
+        {run.evaluated_technology.observed_version}
+      </p>
       <Feedback pending={query.isPending} error={query.error} />
+      {query.isError && (
+        <button className="v2-text-button" onClick={() => void query.refetch()}>
+          Reintentar
+        </button>
+      )}
+      {query.data && !query.isError && (
+        <p>Total: {query.data.page.total} hallazgos</p>
+      )}
       {query.data?.items.length === 0 && (
         <p>No se guardaron hallazgos en esta consulta.</p>
       )}
@@ -712,6 +731,9 @@ function DeviceFindings({
           onReview={() => void query.refetch()}
         />
       ))}
+      {!query.isError && (
+        <Pagination page={query.data?.page} onChange={setOffset} />
+      )}
     </div>
   );
 }
@@ -760,6 +782,9 @@ function FindingCard({
   return (
     <article className="v2-panel rc2-panel">
       <h4>{finding.external_id}</h4>
+      <p>
+        Hallazgo: <code>{finding.id}</code>
+      </p>
       <p>
         {applicability[finding.applicability]} ·{" "}
         {finding.status === "reviewed" ? "Revisado" : "Abierto"} · Severidad{" "}

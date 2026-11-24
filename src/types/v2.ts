@@ -34,7 +34,19 @@ export interface WorkspaceList {
   items: Workspace[];
 }
 
+export interface TargetSummary {
+  total: number;
+  approved: number;
+  items: Array<{
+    id: string;
+    url: string;
+    label: string | null;
+    authorization_status: "pending" | "approved" | "rejected" | "expired";
+  }>;
+}
+
 export interface Application {
+  target_summary?: TargetSummary;
   id: string;
   name: string;
   description: string | null;
@@ -153,7 +165,24 @@ export interface AnalysisRun extends AnalysisAccepted {
   completed_at: string | null;
 }
 
+export interface HistoricalAnalysis {
+  id: string;
+  application_id: string;
+  technology_id: string | null;
+  selected_cpe: string;
+  created_at: string;
+  nvd_mode: "fixture" | "live" | "unknown";
+  evaluated_technology: {
+    vendor: string;
+    product: string;
+    version: string;
+    basis: "historical_cpe";
+  } | null;
+}
+
 export interface AnalysisHistoryItem extends AnalysisRun {
+  selected_cpe?: string;
+  evaluated_technology?: HistoricalAnalysis["evaluated_technology"];
   technology_id: string;
   product: string;
   version: string;
@@ -200,6 +229,7 @@ export interface Recommendation {
 
 export interface RecommendationList {
   items: Recommendation[];
+  page?: { limit: number; offset: number; total: number };
 }
 
 export interface TargetReadiness {
@@ -233,6 +263,7 @@ export interface ApplicationTarget {
 
 export interface ApplicationTargetList {
   items: ApplicationTarget[];
+  page?: { limit: number; offset: number; total: number };
 }
 
 export interface WorkspaceTarget extends ApplicationTarget {
@@ -297,6 +328,7 @@ export interface V2Dashboard {
 }
 
 export interface NvdFindingList {
+  analysis?: HistoricalAnalysis;
   items: NvdFinding[];
   page: { limit: number; offset: number; total: number };
   run_status: V2AnalysisStatus;

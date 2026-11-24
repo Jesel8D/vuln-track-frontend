@@ -6,7 +6,7 @@ import { Link, useParams } from "react-router";
 import { useAuth } from "../features/auth/context";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
 import { errorText } from "../services/api";
-import { HistoricalFindingCard } from "../features/v2/HistoricalFindingCard";
+import { AnalysisFindings } from "../features/v2/AnalysisFindings";
 
 const PAGE_SIZE = 20;
 
@@ -74,26 +74,6 @@ export function V2AnalysisHistoryPage() {
         signal,
       ),
     enabled: Boolean(current && applicationId),
-  });
-  const selectedFindings = useQuery({
-    queryKey: [
-      "v2",
-      user?.id,
-      current?.workspace_id,
-      applicationId,
-      selectedRunId,
-      "findings",
-      0,
-    ],
-    queryFn: ({ signal }) =>
-      api.v2Findings(
-        current!.workspace_id,
-        applicationId,
-        selectedRunId!,
-        0,
-        signal,
-      ),
-    enabled: Boolean(current && applicationId && selectedRunId),
   });
 
   if (applications.isPending || (history.isPending && application)) {
@@ -224,7 +204,9 @@ export function V2AnalysisHistoryPage() {
                     <tr key={run.id}>
                       <td>
                         <strong>
-                          {run.product} {run.version}
+                          {run.evaluated_technology?.product ?? run.product}{" "}
+                          {run.evaluated_technology?.version ??
+                            "Versión histórica no disponible"}
                         </strong>
                         <small>{run.id}</small>
                         <small>
@@ -277,40 +259,13 @@ export function V2AnalysisHistoryPage() {
               </table>
             </div>
             {selectedRunId && (
-              <section className="v2-history-results" aria-live="polite">
-                <h2>Resultados de la consulta seleccionada</h2>
-                {selectedFindings.isPending ? (
-                  <p className="v2-loading" role="status">
-                    Cargando resultados…
-                  </p>
-                ) : selectedFindings.isError ? (
-                  <div className="v2-error-inline" role="alert">
-                    <span>{errorText(selectedFindings.error)}</span>
-                    <button
-                      className="v2-text-button"
-                      onClick={() => void selectedFindings.refetch()}
-                    >
-                      Reintentar
-                    </button>
-                  </div>
-                ) : selectedFindings.data.items.length ? (
-                  <div className="v2-history-findings-list">
-                    {selectedFindings.data.items.map((finding) => (
-                      <HistoricalFindingCard
-                        key={finding.id}
-                        finding={finding}
-                        workspaceId={current!.workspace_id}
-                        applicationId={application.id}
-                        canWrite={canWrite && application.status === "active"}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="v2-analysis-help">
-                    Esta consulta no guardó hallazgos.
-                  </p>
-                )}
-              </section>
+              <AnalysisFindings
+                key={`${current!.workspace_id}/${application.id}/${selectedRunId}`}
+                workspaceId={current!.workspace_id}
+                applicationId={application.id}
+                runId={selectedRunId}
+                canWrite={canWrite && application.status === "active"}
+              />
             )}
             <div
               className="v2-pagination"
@@ -324,14 +279,20 @@ export function V2AnalysisHistoryPage() {
                 <button
                   className="v2-secondary-button"
                   disabled={offset === 0}
-                  onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+                  onClick={() => {
+                    setSelectedRunId(null);
+                    setOffset(Math.max(0, offset - PAGE_SIZE));
+                  }}
                 >
                   Anterior
                 </button>
                 <button
                   className="v2-secondary-button"
                   disabled={offset + PAGE_SIZE >= result.page.total}
-                  onClick={() => setOffset(offset + PAGE_SIZE)}
+                  onClick={() => {
+                    setSelectedRunId(null);
+                    setOffset(offset + PAGE_SIZE);
+                  }}
                 >
                   Siguiente
                 </button>

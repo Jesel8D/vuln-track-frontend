@@ -1,5 +1,5 @@
 import { Pagination } from "../features/v2/Pagination";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import {
@@ -13,7 +13,6 @@ import {
 import { useAuth } from "../features/auth/context";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
 import { errorText } from "../services/api";
-import type { WorkspaceTarget } from "../types/v2";
 
 export function V2ApplicationsPage() {
   const { api, user } = useAuth();
@@ -43,22 +42,6 @@ export function V2ApplicationsPage() {
       }),
     enabled: Boolean(current),
   });
-  const targetsQuery = useQuery({
-    queryKey: ["v2", user?.id, current?.workspace_id, "targets"],
-    queryFn: ({ signal }) =>
-      api.v2WorkspaceTargets(current!.workspace_id, signal),
-    enabled: Boolean(current),
-  });
-  const targetItems = targetsQuery.data?.items;
-  const targetsByApplication = useMemo(() => {
-    const grouped = new Map<string, WorkspaceTarget[]>();
-    for (const target of targetItems ?? []) {
-      const items = grouped.get(target.application_id) ?? [];
-      items.push(target);
-      grouped.set(target.application_id, items);
-    }
-    return grouped;
-  }, [targetItems]);
   const create = useMutation({
     mutationFn: () =>
       api.createApplication(current!.workspace_id, {
@@ -162,20 +145,6 @@ export function V2ApplicationsPage() {
             {message}
           </p>
         )}
-        {targetsQuery.isError && (
-          <div className="v2-error-inline" role="alert">
-            <span>
-              No se pudieron cargar las URLs registradas.{" "}
-              {errorText(targetsQuery.error)}
-            </span>
-            <button
-              className="v2-text-button"
-              onClick={() => void targetsQuery.refetch()}
-            >
-              Reintentar
-            </button>
-          </div>
-        )}
         {query.isPending ? (
           <div className="v2-loading" role="status">
             Cargando aplicaciones…
@@ -220,14 +189,13 @@ export function V2ApplicationsPage() {
                       <small className="v2-mono">{application.id}</small>
                     </td>
                     <td>
-                      {targetsQuery.isPending ? (
+                      {query.isPending ? (
                         <span className="v2-muted">Cargando URLs…</span>
-                      ) : targetsQuery.isError ? (
+                      ) : query.isError ? (
                         <span className="v2-muted">No disponible</span>
-                      ) : (targetsByApplication.get(application.id) ?? [])
-                          .length ? (
+                      ) : (application.target_summary?.items ?? []).length ? (
                         <div className="v2-application-targets-cell">
-                          {(targetsByApplication.get(application.id) ?? [])
+                          {(application.target_summary?.items ?? [])
                             .slice(0, 2)
                             .map((target) => (
                               <div key={target.id}>
@@ -253,18 +221,19 @@ export function V2ApplicationsPage() {
                                 </span>
                               </div>
                             ))}
-                          {(targetsByApplication.get(application.id) ?? [])
-                            .length > 2 && (
-                            <small>
-                              +
-                              {(targetsByApplication.get(application.id) ?? [])
-                                .length - 2}{" "}
-                              destinos
-                            </small>
+                          {(application.target_summary?.total ?? 0) > 2 && (
+                            <Link to={`/aplicaciones/${application.id}`}>
+                              +{application.target_summary!.total - 2} destinos
+                              · Ver todos
+                            </Link>
                           )}
                         </div>
                       ) : (
-                        <span className="v2-muted">Sin URL registrada</span>
+                        <span className="v2-muted">
+                          {application.target_summary
+                            ? "Sin URL registrada"
+                            : "Resumen no disponible"}
+                        </span>
                       )}
                     </td>
                     <td>
@@ -282,12 +251,9 @@ export function V2ApplicationsPage() {
                       </span>
                     </td>
                     <td>
-                      {targetsQuery.isError
-                        ? "No disponible"
-                        : (targetsByApplication.get(application.id) ?? [])
-                              .length
-                          ? `${(targetsByApplication.get(application.id) ?? []).filter((target) => target.authorization_status === "approved").length} de ${(targetsByApplication.get(application.id) ?? []).length} con declaración vigente`
-                          : "Sin destinos en la página de URLs"}
+                      {application.target_summary
+                        ? `${application.target_summary.approved} de ${application.target_summary.total} con declaración vigente`
+                        : "Resumen no disponible"}
                     </td>
                     <td>
                       {new Date(application.updated_at).toLocaleDateString(
