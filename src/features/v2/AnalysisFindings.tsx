@@ -1,3 +1,4 @@
+import { CveQueryStatus } from "./CveQueryStatus";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../auth/context";
@@ -50,15 +51,7 @@ export function AnalysisFindings({
             Tecnología: <code>{analysis.technology_id ?? "No registrada"}</code>{" "}
             · Fecha: {new Date(analysis.created_at).toLocaleString("es-MX")}
           </p>
-          <p>
-            Resultados CVE:{" "}
-            {analysis.nvd_mode === "fixture"
-              ? "fixture de demostración"
-              : analysis.nvd_mode === "live"
-                ? "fuente NVD real"
-                : "procedencia no registrada"}
-            .
-          </p>
+          <CveQueryStatus value={analysis} />
           <p>
             Producto y versión del CPE guardado:{" "}
             {evaluated

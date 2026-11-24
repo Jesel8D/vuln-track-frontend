@@ -1,3 +1,4 @@
+import { CveQueryStatus } from "../features/v2/CveQueryStatus";
 import { Pagination } from "../features/v2/Pagination";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -209,13 +210,7 @@ export function V2AnalysisHistoryPage() {
                             "Versión histórica no disponible"}
                         </strong>
                         <small>{run.id}</small>
-                        <small>
-                          {run.nvd_mode === "live"
-                            ? "NVD en vivo"
-                            : run.nvd_mode === "fixture"
-                              ? "NVD de fixture"
-                              : "Procedencia sin registrar"}
-                        </small>
+                        <CveQueryStatus value={run} />
                       </td>
                       <td>
                         {new Date(run.created_at).toLocaleString("es-MX")}

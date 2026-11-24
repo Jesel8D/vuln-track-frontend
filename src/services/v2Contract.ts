@@ -1,3 +1,4 @@
+import { isCveReliability } from "./cveReliabilityContract";
 import type {
   Application,
   ApplicationTargetList,
@@ -95,7 +96,7 @@ function isTargetSummary(v: unknown) {
 }
 
 export function isHistoricalAnalysis(v: unknown): v is HistoricalAnalysis {
-  if (!record(v)) return false;
+  if (!record(v) || !isCveReliability(v)) return false;
   const e = v.evaluated_technology;
   return (
     typeof v.id === "string" &&
@@ -300,6 +301,7 @@ export function isV2Dashboard(value: unknown): value is V2Dashboard {
     value.recent_analyses.every(
       (item) =>
         record(item) &&
+        isCveReliability(item) &&
         typeof item.id === "string" &&
         uuid.test(item.id) &&
         typeof item.application_id === "string" &&
@@ -327,6 +329,7 @@ export function isV2Dashboard(value: unknown): value is V2Dashboard {
     value.priority_findings.every(
       (item) =>
         record(item) &&
+        (item.analysis === undefined || isCveReliability(item.analysis)) &&
         typeof item.id === "string" &&
         uuid.test(item.id) &&
         typeof item.external_id === "string" &&
@@ -525,6 +528,7 @@ export function isAnalysisAccepted(value: unknown): value is AnalysisAccepted {
 }
 
 export function isAnalysisRun(value: unknown): value is AnalysisRun {
+  if (!isCveReliability(value)) return false;
   return (
     record(value) &&
     typeof value.id === "string" &&

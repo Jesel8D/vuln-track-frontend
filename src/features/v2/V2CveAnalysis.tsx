@@ -1,3 +1,4 @@
+import { CveQueryStatus } from "./CveQueryStatus";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -7,7 +8,6 @@ import {
   ExternalLink,
   Play,
   RefreshCw,
-  ShieldCheck,
 } from "lucide-react";
 import { ApiError, errorText } from "../../services/api";
 import { useAuth } from "../auth/context";
@@ -270,6 +270,7 @@ export function V2CveAnalysis({
   applicationId,
   technologyId,
   selectedCpe,
+  identificationId,
   confirmed,
   canWrite,
   activeApplication,
@@ -278,6 +279,7 @@ export function V2CveAnalysis({
   applicationId: string;
   technologyId: string;
   selectedCpe: string | null;
+  identificationId?: string | null;
   confirmed: boolean;
   canWrite: boolean;
   activeApplication: boolean;
@@ -313,6 +315,8 @@ export function V2CveAnalysis({
       applicationId,
       technologyId,
       "analysis",
+      selectedCpe,
+      identificationId,
       runId,
     ],
     queryFn: ({ signal }) =>
@@ -468,14 +472,8 @@ export function V2CveAnalysis({
       )}
       {run.data && (
         <div className="v2-run-summary">
+          <CveQueryStatus value={run.data} />
           <div className="v2-run-status">
-            <small>
-              {run.data.nvd_mode === "live"
-                ? "NVD en vivo"
-                : run.data.nvd_mode === "fixture"
-                  ? "NVD de fixture"
-                  : "Procedencia sin registrar"}
-            </small>
             <span className={`v2-run-indicator ${run.data.status}`} />
             {run.data.status === "completed"
               ? run.data.coverage === "partial"
@@ -575,8 +573,12 @@ export function V2CveAnalysis({
             </div>
           ) : (
             <div className="v2-no-findings">
-              <ShieldCheck size={19} />
-              <p>NVD no devolvió CVEs para el CPE y la versión consultados.</p>
+              <AlertTriangle size={19} />
+              <p>
+                No hay hallazgos guardados en esta página de la consulta. Revise
+                su estado y cobertura; un fallo o una página vacía no demuestra
+                ausencia de vulnerabilidades.
+              </p>
             </div>
           )}
           {findings.data.page.total > findings.data.page.limit && (

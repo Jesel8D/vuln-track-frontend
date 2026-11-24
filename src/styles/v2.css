@@ -1930,7 +1930,7 @@
 }
 .v2-severity-legend small {
   min-width: 42px;
-  color: #7b8799;
+  color: #53647a;
   text-align: right;
 }
 .v2-trend-chart {
@@ -1991,14 +1991,14 @@
 }
 .v2-priority-card > p {
   margin-bottom: 9px;
-  color: #66758c;
+  color: #53647a;
   font-size: 11px;
 }
 .v2-priority-card > a {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #60728e;
+  color: #475a76;
   font-size: 11px;
   font-weight: 600;
 }
@@ -2728,4 +2728,26 @@
   color: #263852;
   background: #fff;
   border-color: #c8d2df;
+}
+
+/* 5A source and query state, using the existing layout and contrast palette. */
+.v2-cve-query-status {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 0.8125rem;
+}
+.v2-cve-query-status p {
+  margin: 0.4rem 0;
+  overflow-wrap: anywhere;
+}
+.v2-cve-query-status code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.v2-cve-query-status summary {
+  cursor: pointer;
+}
+.v2-cve-query-status details {
+  margin: 0.5rem 0;
 }

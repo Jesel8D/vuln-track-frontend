@@ -1,3 +1,6 @@
+import { isCveReliability } from "../services/cveReliabilityContract";
+import { CveQueryStatus } from "../features/v2/CveQueryStatus";
+import type { CveReliability } from "../types/cveReliability";
 import { Pagination } from "../features/v2/Pagination";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
@@ -36,6 +39,8 @@ type Identification = {
   } | null;
 };
 type Device = {
+  current_cve_query_state?:
+    "recorded" | "not_queried" | "unknown" | "identification_required";
   id: string;
   record_version: number;
   cpe_review_state: "pending" | "confirmed" | "needs_review";
@@ -55,7 +60,7 @@ type Device = {
   cpe_confirmed?: boolean;
   current_identification?: Identification | null;
 };
-type Run = {
+type Run = CveReliability & {
   id: string;
   mode: Mode;
   status: "running" | "completed" | "failed";
@@ -1059,10 +1064,15 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
   const runs = useQuery({
     queryKey: [...key, "analyses", runOffset],
     enabled: detail.isSuccess,
-    queryFn: ({ signal }) =>
-      api.request<Page<Run>>(path + "/analyses?offset=" + runOffset, {
-        signal,
-      }),
+    queryFn: async ({ signal }) => {
+      const result = await api.request<Page<Run>>(
+        path + "/analyses?offset=" + runOffset,
+        { signal },
+      );
+      if (!result.items.every(isCveReliability))
+        throw new Error("Respuesta de consulta CVE incompatible");
+      return result;
+    },
     refetchInterval: (state) =>
       state.state.data?.items.some((item) => item.status === "running")
         ? 2500
@@ -1350,6 +1360,13 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
           error={analyze.error}
           label="Consultando el catálogo CVE…"
         />
+        <p>
+          {row.current_cve_query_state === "not_queried"
+            ? "Identificación actual sin consulta registrada."
+            : row.current_cve_query_state === "recorded"
+              ? "Hay consultas asociadas a la identificación actual; revise su cobertura y vigencia."
+              : "Consulta de la identificación actual: No registrada o sin identificación confirmada."}
+        </p>
         <h3>Historial de consultas</h3>
         <Feedback pending={runs.isPending} error={runs.error} />
         {runs.data?.items.length === 0 && <p>Sin consultas registradas.</p>}
@@ -1370,6 +1387,7 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
                 {entry.total_results ?? "total desconocido"} ·{" "}
                 {entry.stored_count} guardados
               </p>
+              <CveQueryStatus value={entry} />
               <code>{entry.selected_cpe}</code>
               <p>
                 {entry.is_current_technology

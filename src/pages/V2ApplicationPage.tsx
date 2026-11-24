@@ -451,11 +451,19 @@ function TechnologyCard({
         Un CPE identifica producto y versión. Los CVE asociados son potenciales
         hasta su evaluación.
       </p>
+      <p>
+        {technology.current_cve_query_state === "not_queried"
+          ? "Identificación actual sin consulta registrada."
+          : technology.current_cve_query_state === "recorded"
+            ? "Hay consultas asociadas a la identificación actual; consulte cobertura y vigencia."
+            : "Consulta de la identificación actual: No registrada o sin identificación confirmada."}
+      </p>
       <V2CveAnalysis
         workspaceId={workspaceId}
         applicationId={applicationId}
         technologyId={technology.id}
         selectedCpe={technology.selected_cpe}
+        identificationId={technology.cpe_confirmation?.id ?? null}
         confirmed={isConfirmed}
         canWrite={canWrite}
         activeApplication={activeApplication}
