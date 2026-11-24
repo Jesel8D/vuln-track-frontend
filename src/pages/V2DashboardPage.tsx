@@ -210,7 +210,10 @@ function AnalysisTrend({ data }: { data: V2Dashboard }) {
         <div>
           <p className="v2-eyebrow">CONSULTAS NVD</p>
           <h2>Actividad de los últimos seis meses</h2>
-          <p>Conteo mensual de ejecuciones guardadas.</p>
+          <p>
+            Conteo mensual de ejecuciones guardadas, incluidas las que
+            reutilizan datos. No cuenta llamadas al proveedor.
+          </p>
         </div>
         <Activity size={20} />
       </div>

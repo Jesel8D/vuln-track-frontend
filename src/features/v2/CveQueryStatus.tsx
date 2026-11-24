@@ -28,6 +28,7 @@ export function CveQueryStatus({
 }) {
   const a = value.assessment;
   const p = value.provenance;
+  const s = value.storage;
   return (
     <div className="v2-cve-query-status">
       <p>
@@ -39,6 +40,19 @@ export function CveQueryStatus({
             : "No registrada"}
         .
       </p>
+      {s && (
+        <p>
+          {s.resolution === "reused"
+            ? "Datos reutilizados desde almacenamiento; no hubo una nueva llamada al proveedor."
+            : s.resolution === "provider"
+              ? p?.cve_source === "fixture" || p?.cve_source === "simulated"
+                ? "Datos obtenidos del proveedor de demostración y guardados."
+                : "Datos obtenidos del proveedor y guardados."
+              : s.refresh_attempted
+                ? "No se pudo completar la actualización solicitada. Las evidencias anteriores permanecen en el historial."
+                : "No se pudo obtener o almacenar la respuesta CVE."}
+        </p>
+      )}
       {a ? (
         <>
           <p>
@@ -80,6 +94,13 @@ export function CveQueryStatus({
           Fecha de respuesta en origen: {date(p?.source_timestamp)} · Expiración
           local: {date(a?.expires_at)}.
         </p>
+        {s && s.resolution !== "failed" && (
+          <p>
+            Obtención original: {date(s.obtained_at)} · Uso de los datos:{" "}
+            {date(s.used_at)} · Expiración del almacenamiento:{" "}
+            {date(s.expires_at)}.
+          </p>
+        )}
         {a && (
           <p>
             Política local: {a.freshness_policy_seconds} segundos desde la
