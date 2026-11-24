@@ -116,8 +116,8 @@ export function InventoryCoveragePanel({
               </p>
               <p>
                 Requiere revisión si tiene un CPE sin confirmación humana. La
-                procedencia de estas confirmaciones no está registrada en el
-                modelo actual.
+                procedencia se consulta por tecnología; en selecciones antiguas
+                puede no estar registrada.
               </p>
               <Link to="/aplicaciones">Abrir inventario de aplicaciones</Link>
             </article>

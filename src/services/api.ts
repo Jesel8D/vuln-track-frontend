@@ -21,6 +21,7 @@ import type {
 import type { ApplicationCpeScope } from "../types/v2";
 import {
   isApplicationList,
+  isCpeConfirmationList,
   isApplicationTargetList,
   isWorkspaceTargetList,
   isV2Dashboard,
@@ -409,9 +410,25 @@ export class ApiClient {
       key,
     });
   }
-  applications(workspaceId: string, signal?: AbortSignal) {
+  applications(
+    workspaceId: string,
+    signal?: AbortSignal,
+    page?: {
+      limit?: number;
+      offset?: number;
+      q?: string;
+      applicationId?: string;
+    },
+  ) {
+    const params = new URLSearchParams();
+    if (page) {
+      params.set("limit", String(page.limit ?? 20));
+      params.set("offset", String(page.offset ?? 0));
+      if (page.q) params.set("q", page.q);
+      if (page.applicationId) params.set("application_id", page.applicationId);
+    }
     return this.checked(
-      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications`,
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications${page ? `?${params}` : ""}`,
       isApplicationList,
       { signal },
     );
@@ -431,9 +448,10 @@ export class ApiClient {
     workspaceId: string,
     applicationId: string,
     signal?: AbortSignal,
+    page?: { limit: number; offset: number },
   ) {
     return this.checked(
-      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/technologies`,
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/technologies${page ? `?${new URLSearchParams({ limit: String(page.limit), offset: String(page.offset) })}` : ""}`,
       isTechnologyList,
       { signal },
     );
@@ -480,6 +498,11 @@ export class ApiClient {
     expectedCpeName: string,
     expectedSelectedCpe: string | null,
     scope: ApplicationCpeScope,
+    confirmation?: {
+      expected_confirmation_id: string | null;
+      reason: string;
+      evidence: string | null;
+    },
   ) {
     return this.checked(
       `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/technologies/${encodeURIComponent(technologyId)}/cpe`,
@@ -491,8 +514,22 @@ export class ApiClient {
           expected_cpe_name: expectedCpeName,
           expected_selected_cpe: expectedSelectedCpe,
           ...scope,
+          ...confirmation,
         },
       },
+    );
+  }
+  cpeConfirmations(
+    workspaceId: string,
+    applicationId: string,
+    technologyId: string,
+    offset: number,
+    signal?: AbortSignal,
+  ) {
+    return this.checked(
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/technologies/${encodeURIComponent(technologyId)}/cpe-confirmations?limit=20&offset=${offset}`,
+      isCpeConfirmationList,
+      { signal },
     );
   }
   startV2Analysis(

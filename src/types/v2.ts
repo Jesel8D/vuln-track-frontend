@@ -20,7 +20,9 @@ export interface InventoryCoverage {
     without_version: number;
     confirmed_by_mode: { live: number; fixture: number; unknown: number };
   };
-  technologies: CoverageCounts & { confirmation_provenance: "not_recorded" };
+  technologies: CoverageCounts & {
+    confirmation_provenance: "not_recorded" | "per_confirmation";
+  };
 }
 
 export interface WorkspaceCreated {
@@ -48,6 +50,37 @@ export interface ApplicationInput {
 
 export interface ApplicationList {
   items: Application[];
+  page?: { total: number; limit: number; offset: number };
+}
+
+export interface CpeConfirmation {
+  id: string;
+  cpe_name_id: string;
+  cpe_name: string;
+  mode: "live" | "fixture";
+  source: "nvd-api" | "nvd-feed" | "nvd-captured-fixture";
+  observed_vendor: string | null;
+  observed_product: string;
+  observed_version: string;
+  confirmed_at: string;
+  reason: string | null;
+  evidence: string | null;
+  is_current?: boolean;
+  catalog_evidence?: {
+    record?: {
+      vendor: string;
+      product: string;
+      version: string;
+      nvd_modified: string;
+    };
+    feed?: { source_modified: string; digest: string; status: string } | null;
+  };
+}
+export interface CpeConfirmationList {
+  items: CpeConfirmation[];
+  page: { total: number; limit: number; offset: number };
+  current_confirmation_id: string | null;
+  legacy_provenance: "not_recorded" | null;
 }
 
 export interface Technology {
@@ -59,10 +92,13 @@ export interface Technology {
   detection_method: "manual" | "http_fingerprint" | "manifest_import";
   confidence: "unconfirmed" | "user_confirmed" | "high" | "medium" | "low";
   observed_at: string;
+  cpe_confirmation?: CpeConfirmation | null;
 }
 
 export interface TechnologyList {
   items: Technology[];
+  page?: { total: number; limit: number; offset: number };
+  summary?: { confirmed_cpe: number };
 }
 
 export interface TechnologyInput {

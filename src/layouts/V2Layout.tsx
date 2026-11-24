@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router";
+import { NavLink, useLocation, useNavigate } from "react-router";
 import {
   Boxes,
   History,
@@ -13,6 +13,10 @@ import {
 import { Brand } from "../components/ui";
 import { useAuth } from "../features/auth/context";
 import { FixtureNotice } from "../features/v2/FixtureNotice";
+import {
+  WorkspaceOutlet,
+  workspaceLanding,
+} from "../features/v2/WorkspaceOutlet";
 import {
   WorkspaceProvider,
   useWorkspace,
@@ -31,6 +35,16 @@ function LayoutContent() {
   const { workspaces, selectedId, select, isPending, error } = useWorkspace();
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  function changeWorkspace(id: string) {
+    if (id === selectedId || !workspaces.some((w) => w.workspace_id === id))
+      return;
+    // Clear resource IDs, query parameters and location state in the same event
+    // as the workspace selection. Authentication and scoped caches remain intact.
+    navigate(workspaceLanding(pathname), { replace: true, state: null });
+    select(id);
+    setMenuOpen(false);
+  }
   const section = navItems.find((item) =>
     item.end ? pathname === item.to : pathname.startsWith(item.to),
   );
@@ -76,7 +90,7 @@ function LayoutContent() {
             <select
               aria-label="Workspace activo"
               value={selectedId ?? ""}
-              onChange={(event) => select(event.target.value)}
+              onChange={(event) => changeWorkspace(event.target.value)}
             >
               {workspaces.map((workspace) => (
                 <option
@@ -134,7 +148,7 @@ function LayoutContent() {
                 <select
                   aria-label="Workspace activo"
                   value={selectedId ?? ""}
-                  onChange={(event) => select(event.target.value)}
+                  onChange={(event) => changeWorkspace(event.target.value)}
                 >
                   {workspaces.map((workspace) => (
                     <option
@@ -161,7 +175,7 @@ function LayoutContent() {
         {menuOpen && <div className="v2-mobile-nav">{navigation}</div>}
         <main id="main-content" tabIndex={-1} className="v2-main-content">
           <FixtureNotice />
-          <Outlet />
+          <WorkspaceOutlet />
         </main>
         <footer className="v2-footer">
           <span>VulnTrack · Inventario y revisión de tecnologías</span>

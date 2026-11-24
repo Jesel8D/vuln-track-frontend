@@ -16,6 +16,8 @@ import { useAuth } from "../features/auth/context";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
 import { V2CveAnalysis } from "../features/v2/V2CveAnalysis";
 import { ApplicationTargets } from "../features/v2/ApplicationTargets";
+import { CpeProvenance } from "../features/v2/CpeProvenance";
+import { Pagination } from "../features/v2/Pagination";
 import { errorText } from "../services/api";
 import type {
   ApplicationCpeScope,
@@ -50,6 +52,8 @@ function TechnologyCard({
   );
   const [message, setMessage] = useState<string | null>(null);
   const [queryVersion, setQueryVersion] = useState(0);
+  const [reason, setReason] = useState("");
+  const [evidence, setEvidence] = useState("");
   const technologiesKey = [
     "v2",
     user?.id,
@@ -95,11 +99,18 @@ function TechnologyCard({
         candidate.cpe_name,
         technology.selected_cpe,
         scope,
+        {
+          expected_confirmation_id: technology.cpe_confirmation?.id ?? null,
+          reason: reason.trim(),
+          evidence: evidence.trim() || null,
+        },
       ),
     onSuccess: async () => {
       setMessage("CPE confirmado por el usuario.");
       setSelectedCandidate(null);
       setSubmittedSearch("");
+      setReason("");
+      setEvidence("");
       await cache.invalidateQueries({ queryKey: technologiesKey });
     },
     onError: (error) => setMessage(errorText(error)),
@@ -113,12 +124,16 @@ function TechnologyCard({
     setSubmittedSearch("");
     setSelectedCandidate(null);
     setMessage(null);
+    setReason("");
+    setEvidence("");
   }
 
   function changePage(nextOffset: number) {
     setOffset(nextOffset);
     setSelectedCandidate(null);
     setMessage(null);
+    setReason("");
+    setEvidence("");
   }
 
   const runSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -166,11 +181,16 @@ function TechnologyCard({
         <div className="v2-selected-cpe">
           <CheckCircle2 size={16} />
           <div>
-            <small>{isConfirmed ? "CPE NVD confirmado" : "CPE actual"}</small>
+            <small>{isConfirmed ? "CPE confirmado" : "CPE actual"}</small>
             <code>{technology.selected_cpe}</code>
           </div>
         </div>
       )}
+      <CpeProvenance
+        workspaceId={workspaceId}
+        applicationId={applicationId}
+        technology={technology}
+      />
       {activeApplication ? (
         <div className="v2-cpe-search-area">
           <form className="v2-cpe-search-form" onSubmit={runSearch}>
@@ -356,10 +376,38 @@ function TechnologyCard({
                       Se valida el tipo, fabricante, producto y versión del CPE
                       contra la tecnología registrada.
                     </p>
+                    {canWrite && (
+                      <div>
+                        <label>
+                          Motivo de confirmación
+                          <input
+                            maxLength={500}
+                            value={reason}
+                            disabled={confirm.isPending}
+                            onChange={(event) => setReason(event.target.value)}
+                          />
+                        </label>
+                        <label>
+                          Evidencia observada (opcional)
+                          <input
+                            maxLength={2000}
+                            value={evidence}
+                            disabled={confirm.isPending}
+                            onChange={(event) =>
+                              setEvidence(event.target.value)
+                            }
+                          />
+                        </label>
+                      </div>
+                    )}
                     {canWrite ? (
                       <button
                         className="v2-primary-button"
-                        disabled={!selectedCandidate || confirm.isPending}
+                        disabled={
+                          !selectedCandidate ||
+                          !reason.trim() ||
+                          confirm.isPending
+                        }
                         onClick={() => {
                           const candidate = candidates.data.items.find(
                             (item) => item.cpe_name_id === selectedCandidate,
@@ -426,9 +474,17 @@ export function V2ApplicationPage() {
   const [vendor, setVendor] = useState("");
   const [version, setVersion] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [technologyOffset, setTechnologyOffset] = useState(0);
   const applications = useQuery({
-    queryKey: ["v2", user?.id, current?.workspace_id, "applications"],
-    queryFn: ({ signal }) => api.applications(current!.workspace_id, signal),
+    queryKey: [
+      "v2",
+      user?.id,
+      current?.workspace_id,
+      "applications",
+      applicationId,
+    ],
+    queryFn: ({ signal }) =>
+      api.applications(current!.workspace_id, signal, { applicationId }),
     enabled: Boolean(current),
   });
   const application = useMemo(
@@ -446,9 +502,12 @@ export function V2ApplicationPage() {
     "technologies",
   ];
   const technologies = useQuery({
-    queryKey: technologiesKey,
+    queryKey: [...technologiesKey, technologyOffset],
     queryFn: ({ signal }) =>
-      api.technologies(current!.workspace_id, applicationId!, signal),
+      api.technologies(current!.workspace_id, applicationId!, signal, {
+        limit: 20,
+        offset: technologyOffset,
+      }),
     enabled: Boolean(current && applicationId && application),
   });
   const createTechnology = useMutation({
@@ -465,6 +524,7 @@ export function V2ApplicationPage() {
       setProduct("");
       setVendor("");
       setVersion("");
+      setTechnologyOffset(0);
       await cache.invalidateQueries({ queryKey: technologiesKey });
     },
     onError: (error) => setMessage(errorText(error)),
@@ -540,18 +600,12 @@ export function V2ApplicationPage() {
       />
       <section className="v2-detail-summary">
         <article>
-          <span>TECNOLOGÍAS LISTADAS</span>
-          <strong>{technologies.data?.items.length ?? "—"}</strong>
+          <span>TECNOLOGÍAS REGISTRADAS</span>
+          <strong>{technologies.data?.page?.total ?? "—"}</strong>
         </article>
         <article>
           <span>CPE CONFIRMADOS</span>
-          <strong>
-            {technologies.data?.items.filter(
-              (technology) =>
-                technology.confidence === "user_confirmed" &&
-                Boolean(technology.selected_cpe),
-            ).length ?? "—"}
-          </strong>
+          <strong>{technologies.data?.summary?.confirmed_cpe ?? "—"}</strong>
         </article>
         <article>
           <span>IDENTIFICACIÓN</span>
@@ -633,6 +687,10 @@ export function V2ApplicationPage() {
             ))}
           </div>
         )}
+        <Pagination
+          page={technologies.data?.page}
+          onChange={setTechnologyOffset}
+        />
       </section>
       <aside className="v2-review-note">
         <ShieldCheck size={18} />
