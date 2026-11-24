@@ -118,11 +118,11 @@ export function V2ApplicationsPage() {
         </article>
         <article className="v2-stat-card v2-stat-note">
           <div className="v2-stat-top">
-            <span>ESCANEO WEB</span>
+            <span>ALCANCE</span>
             <CircleAlert size={20} />
           </div>
-          <strong className="v2-stat-word">No disponible</strong>
-          <p>ZAP Baseline aún no forma parte de la API.</p>
+          <strong className="v2-stat-word">Registro manual</strong>
+          <p>Inventario de tecnologías declaradas, sin escanear destinos.</p>
         </article>
       </section>
       <section className="v2-panel v2-inventory-panel">

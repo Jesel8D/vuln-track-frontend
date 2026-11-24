@@ -15,6 +15,7 @@ import {
 import { Link } from "react-router";
 import { useAuth } from "../features/auth/context";
 import { useWorkspace } from "../features/v2/WorkspaceContext";
+import { InventoryCoveragePanel } from "../features/v2/InventoryCoverage";
 import { errorText } from "../services/api";
 import type { V2Dashboard } from "../types/v2";
 
@@ -180,7 +181,7 @@ function SeverityDistribution({ data }: { data: V2Dashboard }) {
       <p className="v2-panel-footnote">
         Se usa la ejecución completada más reciente de cada tecnología. CVE
         repetidos en tecnologías distintas se cuentan una vez por tecnología.
-        Esto no confirma aplicabilidad.
+        Esto no confirma aplicabilidad ni representa riesgo real.
       </p>
     </section>
   );
@@ -241,10 +242,10 @@ export function V2DashboardPage() {
   const { api, user } = useAuth();
   const { current, isPending, error } = useWorkspace();
   const runtimeMode = import.meta.env.VITE_NVD_MODE;
-  const [mode, setMode] = useState<"fixture" | "live" | "unknown" | undefined>(
+  const [mode, setMode] = useState<"fixture" | "live" | "unknown">(
     runtimeMode === "fixture" || runtimeMode === "live"
       ? runtimeMode
-      : undefined,
+      : "unknown",
   );
   const canWrite = current?.role === "owner" || current?.role === "editor";
   const query = useQuery({
@@ -282,8 +283,9 @@ export function V2DashboardPage() {
           aria-label="Alcance del dashboard"
         >
           <p>
-            Este resumen cubre aplicaciones web. El historial de dispositivos se
-            consulta en <Link to="/dispositivos">Dispositivos</Link>.
+            Las consultas CVE de este resumen cubren aplicaciones web. El
+            historial de dispositivos se consulta en{" "}
+            <Link to="/dispositivos">Dispositivos</Link>.
           </p>
           <label>
             Procedencia de las consultas del dashboard
@@ -330,6 +332,8 @@ export function V2DashboardPage() {
           <span className="v2-readonly-label">Acceso de solo lectura</span>
         )}
       </section>
+
+      <InventoryCoveragePanel workspaceId={current.workspace_id} />
 
       {query.isPending ? (
         <div className="v2-loading" role="status">
@@ -402,7 +406,9 @@ export function V2DashboardPage() {
               {query.data.summary.authorized_targets_total} con declaración
               vigente registrada.
             </span>
-            <strong>ZAP Baseline aún no está habilitado.</strong>
+            <strong>
+              Una declaración no acredita control técnico del dominio.
+            </strong>
             <Link to="/aplicaciones">
               Ver inventario <ArrowRight size={14} />
             </Link>
@@ -419,7 +425,10 @@ export function V2DashboardPage() {
                 <div>
                   <p className="v2-eyebrow">EJECUCIONES RECIENTES</p>
                   <h2>Consultas NVD</h2>
-                  <p>Hasta cinco ejecuciones reales del workspace.</p>
+                  <p>
+                    Hasta cinco ejecuciones guardadas de la procedencia
+                    seleccionada.
+                  </p>
                 </div>
                 <Link className="v2-text-link" to="/historial">
                   Ver historial <ArrowRight size={15} />

@@ -18,7 +18,45 @@ import type {
   V2AnalysisStatus,
   V2Coverage,
   TargetReadiness,
+  InventoryCoverage,
 } from "../types/v2";
+
+export function isInventoryCoverage(
+  value: unknown,
+): value is InventoryCoverage {
+  const count = (v: unknown): v is number =>
+    typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
+  const counts = (v: unknown) =>
+    record(v) &&
+    count(v.total) &&
+    count(v.confirmed) &&
+    count(v.pending) &&
+    count(v.needs_review) &&
+    count(v.excluded_inactive) &&
+    v.confirmed + v.pending + v.needs_review === v.total;
+  if (
+    !record(value) ||
+    typeof value.workspace_id !== "string" ||
+    !uuid.test(value.workspace_id) ||
+    value.scope !== "active" ||
+    !counts(value.devices) ||
+    !counts(value.technologies)
+  )
+    return false;
+  const d = value.devices as Record<string, unknown>;
+  const t = value.technologies as Record<string, unknown>;
+  const modes = d.confirmed_by_mode;
+  return (
+    count(d.without_version) &&
+    d.without_version <= (d.total as number) &&
+    record(modes) &&
+    count(modes.live) &&
+    count(modes.fixture) &&
+    count(modes.unknown) &&
+    modes.live + modes.fixture + modes.unknown === d.confirmed &&
+    t.confirmation_provenance === "not_recorded"
+  );
+}
 
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

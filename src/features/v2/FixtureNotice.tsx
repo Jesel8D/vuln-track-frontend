@@ -5,9 +5,9 @@ export function FixtureNotice() {
       <div className="v2-fixture-notice" role="note" aria-label="Fuente NVD">
         <strong>NVD en vivo</strong>
         <p>
-          Las consultas bajo demanda usan el cat?logo oficial. Los resultados
-          previos conservan su procedencia. Los CVE relacionados requieren
-          revisi?n humana.
+          Las consultas CVE bajo demanda usan NVD. Los resultados previos
+          conservan su procedencia. Los CVE relacionados requieren revisión
+          humana.
         </p>
       </div>
     );
@@ -20,9 +20,10 @@ export function FixtureNotice() {
     >
       <strong>Demostración · NVD de fixture</strong>
       <p>
-        Datos capturados, sin consultas NVD en vivo. Los CVE relacionados no
-        confirman vulnerabilidades. ZAP y la verificación remota siguen
-        bloqueados.
+        Las consultas CVE usan datos capturados, sin consultas CVE en vivo. El
+        diccionario CPE oficial se consulta por separado cuando está conectado.
+        Los CVE relacionados no confirman vulnerabilidades. Estas consultas no
+        escanean destinos.
       </p>
     </div>
   );

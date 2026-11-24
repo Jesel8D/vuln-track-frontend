@@ -2618,3 +2618,71 @@
   margin: 0.3rem 0 0;
   line-height: 1.5;
 }
+
+/* Workspace inventory coverage: text remains the primary accessible alternative. */
+.v2-coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+.v2-coverage-grid article {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.v2-coverage-grid p {
+  line-height: 1.6;
+}
+.v2-coverage-bar {
+  display: flex;
+  height: 0.75rem;
+  border-radius: 0.3rem;
+  overflow: hidden;
+  background: #e5eaf1;
+  margin: 1rem 0;
+}
+.v2-coverage-confirmed {
+  background: #236b62;
+}
+.v2-coverage-pending {
+  background: #8391a9;
+}
+.v2-coverage-needs_review {
+  background: #9b6a16;
+}
+.v2-coverage-counts {
+  list-style: none;
+  padding: 0;
+}
+.v2-coverage-counts li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #dce3ed;
+}
+@media (max-width: 760px) {
+  .v2-coverage-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.v2-account {
+  --muted: #4f6179;
+}
+.v2-account-details {
+  display: grid;
+  gap: 1rem;
+}
+.v2-account-details dt {
+  color: #4f6179;
+  font-size: 0.875rem;
+}
+.v2-account-details dd {
+  margin: 0.35rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.v2-inventory-coverage {
+  padding: clamp(14px, 2vw, 22px);
+}
