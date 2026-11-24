@@ -1110,8 +1110,12 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
       setSelectedRun(run.id);
       setRunOffset(0);
       void runs.refetch();
+      void cache.invalidateQueries({ queryKey: key, exact: true });
     },
-    onError: () => void runs.refetch(),
+    onError: () => {
+      void runs.refetch();
+      void cache.invalidateQueries({ queryKey: key, exact: true });
+    },
   });
   const row = detail.data;
   if (!row)

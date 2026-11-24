@@ -2751,3 +2751,20 @@
 .v2-cve-query-status details {
   margin: 0.5rem 0;
 }
+
+/* The sidebar already provides the desktop workspace picker. Keep the top
+   picker for mobile and constrain long usernames at intermediate widths. */
+.v2-topbar-actions {
+  min-width: 0;
+}
+.v2-top-user {
+  max-width: min(20vw, 200px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (min-width: 761px) {
+  .v2-top-workspace {
+    display: none;
+  }
+}

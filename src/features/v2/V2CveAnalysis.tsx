@@ -304,8 +304,16 @@ export function V2CveAnalysis({
       setOffset(0);
       setNotice(null);
       v2AnalysisIntents.setRun(scope, accepted.id);
+      void cache.invalidateQueries({
+        queryKey: ["v2", user?.id, workspaceId, applicationId, "technologies"],
+      });
     },
-    onError: (error) => setNotice(errorText(error)),
+    onError: (error) => {
+      setNotice(errorText(error));
+      void cache.invalidateQueries({
+        queryKey: ["v2", user?.id, workspaceId, applicationId, "technologies"],
+      });
+    },
   });
   const run = useQuery({
     queryKey: [

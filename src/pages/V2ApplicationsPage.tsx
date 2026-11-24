@@ -1,3 +1,4 @@
+import { useDialogFocus } from "../components/useDialogFocus";
 import { Pagination } from "../features/v2/Pagination";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +23,7 @@ export function V2ApplicationsPage() {
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
+  const dialogRef = useDialogFocus(formOpen, setFormOpen);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -301,6 +303,7 @@ export function V2ApplicationsPage() {
         >
           <section
             className="v2-modal"
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="application-dialog-title"
