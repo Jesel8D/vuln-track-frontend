@@ -1,4 +1,11 @@
 export interface CveReliability {
+  storage?: {
+    resolution: "provider" | "reused" | "failed";
+    refresh_attempted: boolean;
+    used_at: string | null;
+    obtained_at: string | null;
+    expires_at: string | null;
+  };
   assessment?: {
     execution: "queued" | "running" | "completed" | "failed";
     coverage: "complete" | "partial" | "unknown";
