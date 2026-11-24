@@ -1,3 +1,4 @@
+import { Pagination } from "./Pagination";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Globe2, Plus, ShieldCheck } from "lucide-react";
@@ -24,6 +25,9 @@ export function ApplicationTargets({
   const { api, user } = useAuth();
   const cache = useQueryClient();
   const [url, setUrl] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [q, setQuery] = useState("");
+  const [state, setState] = useState("");
   const [label, setLabel] = useState("");
   const [verificationTarget, setVerificationTarget] = useState<string | null>(
     null,
@@ -36,9 +40,27 @@ export function ApplicationTargets({
   const [withdrawalReason, setWithdrawalReason] = useState("");
   const queryKey = ["v2", user?.id, workspaceId, applicationId, "targets"];
   const targets = useQuery({
-    queryKey,
-    queryFn: ({ signal }) => api.v2Targets(workspaceId, applicationId, signal),
+    queryKey: [...queryKey, offset, q, state],
+    queryFn: ({ signal }) =>
+      api.v2Targets(workspaceId, applicationId, signal, {
+        offset,
+        q,
+        authorization_status: state,
+      }),
   });
+  function resetSelection() {
+    setSelectedTarget(null);
+    setVerificationTarget(null);
+    setReference("");
+    setAttested(false);
+    setExpiryDate("");
+    setWithdrawalReason("");
+    setNotice(null);
+  }
+  function changePage(next: number) {
+    resetSelection();
+    setOffset(next);
+  }
   const refresh = () => cache.invalidateQueries({ queryKey });
   const create = useMutation({
     mutationFn: () =>
@@ -47,6 +69,10 @@ export function ApplicationTargets({
         label: label.trim() || null,
       }),
     onSuccess: async () => {
+      setOffset(0);
+      setQuery("");
+      setState("");
+      resetSelection();
       setUrl("");
       setLabel("");
       setNotice("Destino agregado en estado pendiente de autorización.");
@@ -107,6 +133,38 @@ export function ApplicationTargets({
         </div>
         <Globe2 size={21} />
       </div>
+      <div className="v2-search-row">
+        <label>
+          Buscar destinos
+          <input
+            maxLength={160}
+            value={q}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              changePage(0);
+            }}
+          />
+        </label>
+        <label>
+          Estado de declaración
+          <select
+            value={state}
+            onChange={(event) => {
+              setState(event.target.value);
+              changePage(0);
+            }}
+          >
+            <option value="">Todos</option>
+            <option value="pending">Pendiente</option>
+            <option value="approved">Vigente</option>
+            <option value="expired">Vencida</option>
+            <option value="rejected">Rechazada o retirada</option>
+          </select>
+        </label>
+      </div>
+      {targets.data?.page && !targets.isError && (
+        <p>Total del filtro: {targets.data.page.total} destinos</p>
+      )}
       {targets.isPending ? (
         <p className="v2-loading" role="status">
           Cargando URLs…
@@ -274,9 +332,16 @@ export function ApplicationTargets({
             </article>
           ))}
           {!targets.data.items.length && (
-            <p className="v2-analysis-help">Aún no hay URLs registradas.</p>
+            <p className="v2-analysis-help">
+              {q || state
+                ? "No hay destinos con estos filtros."
+                : "Aún no hay URLs registradas."}
+            </p>
           )}
         </div>
+      )}
+      {!targets.isError && (
+        <Pagination page={targets.data?.page} onChange={changePage} />
       )}
       {canWrite && (
         <form

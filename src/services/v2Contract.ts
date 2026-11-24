@@ -19,6 +19,7 @@ import type {
   V2Coverage,
   TargetReadiness,
   InventoryCoverage,
+  HistoricalAnalysis,
   CpeConfirmation,
   CpeConfirmationList,
 } from "../types/v2";
@@ -71,6 +72,50 @@ const bounded = (value: unknown, max: number): value is string =>
 const timestamp = (value: unknown): value is string =>
   bounded(value, 64) && Number.isFinite(Date.parse(value));
 
+function isTargetSummary(v: unknown) {
+  return (
+    record(v) &&
+    nonnegativeInteger(v.total) &&
+    nonnegativeInteger(v.approved) &&
+    v.approved <= v.total &&
+    Array.isArray(v.items) &&
+    v.items.length === Math.min(2, v.total) &&
+    v.items.every(
+      (x) =>
+        record(x) &&
+        typeof x.id === "string" &&
+        uuid.test(x.id) &&
+        bounded(x.url, 2048) &&
+        (x.label === null || bounded(x.label, 120)) &&
+        ["pending", "approved", "rejected", "expired"].includes(
+          String(x.authorization_status),
+        ),
+    )
+  );
+}
+
+export function isHistoricalAnalysis(v: unknown): v is HistoricalAnalysis {
+  if (!record(v)) return false;
+  const e = v.evaluated_technology;
+  return (
+    typeof v.id === "string" &&
+    uuid.test(v.id) &&
+    typeof v.application_id === "string" &&
+    uuid.test(v.application_id) &&
+    (v.technology_id === null ||
+      (typeof v.technology_id === "string" && uuid.test(v.technology_id))) &&
+    bounded(v.selected_cpe, 1024) &&
+    timestamp(v.created_at) &&
+    ["fixture", "live", "unknown"].includes(String(v.nvd_mode)) &&
+    (e === null ||
+      (record(e) &&
+        e.basis === "historical_cpe" &&
+        bounded(e.vendor, 1024) &&
+        bounded(e.product, 1024) &&
+        bounded(e.version, 1024)))
+  );
+}
+
 function isApplication(value: unknown): value is Application {
   return (
     record(value) &&
@@ -80,7 +125,9 @@ function isApplication(value: unknown): value is Application {
     (value.description === null || typeof value.description === "string") &&
     (value.status === "active" || value.status === "archived") &&
     timestamp(value.created_at) &&
-    timestamp(value.updated_at)
+    timestamp(value.updated_at) &&
+    (value.target_summary === undefined ||
+      isTargetSummary(value.target_summary))
   );
 }
 
@@ -181,7 +228,9 @@ export function isApplicationTargetList(
         timestamp(item.created_at) &&
         timestamp(item.updated_at) &&
         isTargetReadiness(item.analysis_readiness),
-    )
+    ) &&
+    (value.page === undefined ||
+      isInventoryPage(value.page, value.items.length))
   );
 }
 
@@ -567,7 +616,8 @@ export function isNvdFindingList(value: unknown): value is NvdFindingList {
     nonnegativeInteger(value.page.offset) &&
     nonnegativeInteger(value.page.total) &&
     isAnalysisStatus(value.run_status) &&
-    isCoverage(value.coverage)
+    isCoverage(value.coverage) &&
+    (value.analysis === undefined || isHistoricalAnalysis(value.analysis))
   );
 }
 
@@ -604,6 +654,8 @@ export function isRecommendationList(
         (item.completed_at === null || timestamp(item.completed_at)) &&
         timestamp(item.created_at) &&
         timestamp(item.updated_at),
-    )
+    ) &&
+    (value.page === undefined ||
+      isInventoryPage(value.page, value.items.length))
   );
 }

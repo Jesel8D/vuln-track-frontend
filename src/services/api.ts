@@ -583,7 +583,11 @@ export class ApiClient {
     const params = new URLSearchParams({ limit: "20", offset: String(offset) });
     return this.checked(
       `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/analyses/${encodeURIComponent(runId)}/findings?${params}`,
-      isNvdFindingList,
+      (v): v is import("../types/v2").NvdFindingList =>
+        isNvdFindingList(v) &&
+        (!v.analysis ||
+          (v.analysis.id === runId &&
+            v.analysis.application_id === applicationId)),
       { signal },
     );
   }
@@ -608,10 +612,18 @@ export class ApiClient {
     applicationId: string,
     findingId: string,
     signal?: AbortSignal,
+    page?: { offset: number; status?: string },
   ) {
+    const params = new URLSearchParams({
+      limit: "10",
+      offset: String(page?.offset ?? 0),
+    });
+    if (page?.status) params.set("status", page.status);
     return this.checked(
-      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/findings/${encodeURIComponent(findingId)}/recommendations`,
-      isRecommendationList,
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/findings/${encodeURIComponent(findingId)}/recommendations${page ? `?${params}` : ""}`,
+      (v): v is import("../types/v2").RecommendationList =>
+        isRecommendationList(v) &&
+        v.items.every((x) => x.finding_id === findingId),
       { signal },
     );
   }
@@ -650,9 +662,21 @@ export class ApiClient {
       },
     );
   }
-  v2Targets(workspaceId: string, applicationId: string, signal?: AbortSignal) {
+  v2Targets(
+    workspaceId: string,
+    applicationId: string,
+    signal?: AbortSignal,
+    page?: { offset: number; q?: string; authorization_status?: string },
+  ) {
+    const params = new URLSearchParams({
+      limit: "20",
+      offset: String(page?.offset ?? 0),
+    });
+    if (page?.q) params.set("q", page.q);
+    if (page?.authorization_status)
+      params.set("authorization_status", page.authorization_status);
     return this.checked(
-      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/targets`,
+      `/api/v2/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(applicationId)}/targets${page ? `?${params}` : ""}`,
       isApplicationTargetList,
       { signal },
     );

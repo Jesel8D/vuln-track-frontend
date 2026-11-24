@@ -2698,3 +2698,34 @@
 .v2-cpe-provenance dd {
   margin-inline-start: 0;
 }
+
+/* Historical evidence can contain long CPE strings and JSON. */
+.v2-finding-evidence {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.v2-history-results code {
+  overflow-wrap: anywhere;
+}
+.v2-target-panel .v2-search-row {
+  flex-wrap: wrap;
+}
+.v2-target-panel .v2-search-row > label,
+.v2-recommendations > label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: #58677d;
+}
+.v2-target-panel .v2-search-row > label {
+  flex: 1 1 190px;
+}
+.v2-target-panel .v2-search-row input,
+.v2-target-panel .v2-search-row select,
+.v2-recommendations > label > select {
+  color: #263852;
+  background: #fff;
+  border-color: #c8d2df;
+}
