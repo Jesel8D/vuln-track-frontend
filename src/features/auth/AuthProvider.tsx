@@ -17,7 +17,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [api] = useState(
     () =>
       new ApiClient(
-        import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000",
+        import.meta.env.VITE_API_URL === "same-origin"
+          ? window.location.origin
+          : (import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000"),
         memory.getToken,
         memory.expire,
       ),
