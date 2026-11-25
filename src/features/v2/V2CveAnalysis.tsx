@@ -418,7 +418,12 @@ export function V2CveAnalysis({
           <button
             className="v2-secondary-button"
             onClick={requestAnalysis}
-            disabled={!confirmed || !selectedCpe || start.isPending}
+            disabled={
+              import.meta.env.VITE_NVD_MODE === "disabled" ||
+              !confirmed ||
+              !selectedCpe ||
+              start.isPending
+            }
           >
             {start.isPending ? (
               <>
@@ -439,7 +444,12 @@ export function V2CveAnalysis({
           </button>
         )}
       </div>
-      {!confirmed || !selectedCpe ? (
+      {import.meta.env.VITE_NVD_MODE === "disabled" ? (
+        <p className="v2-analysis-help">
+          Las consultas CVE están deshabilitadas en esta instalación. El
+          historial conservado sigue disponible.
+        </p>
+      ) : !confirmed || !selectedCpe ? (
         <p className="v2-analysis-help">
           Confirma primero un CPE compatible con la versión observada para
           habilitar la consulta.

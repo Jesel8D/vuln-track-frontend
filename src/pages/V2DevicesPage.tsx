@@ -1347,13 +1347,18 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
       <section className="v2-panel rc2-panel">
         <h2>Consultas CVE del dispositivo</h2>
         <p>
-          La consulta usa capturas fixture y el CPE confirmado. CVE externo está
-          aplazado. Los resultados no confirman vulnerabilidades.
+          {import.meta.env.VITE_NVD_MODE === "disabled"
+            ? "Las consultas CVE están deshabilitadas en esta instalación. El historial conservado sigue disponible."
+            : "La consulta usa capturas fixture y el CPE confirmado. CVE externo está aplazado. Los resultados no confirman vulnerabilidades."}
         </p>
         {active && (
           <button
             className="v2-primary-button"
-            disabled={!row.current_identification || analyze.isPending}
+            disabled={
+              import.meta.env.VITE_NVD_MODE === "disabled" ||
+              !row.current_identification ||
+              analyze.isPending
+            }
             onClick={() => analyze.mutate(crypto.randomUUID())}
           >
             Consultar CVE de demostración
