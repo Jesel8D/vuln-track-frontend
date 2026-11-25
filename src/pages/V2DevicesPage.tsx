@@ -1127,6 +1127,17 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
       </div>
     );
   const active = writer && row.status === "active";
+  const cveMode = import.meta.env.VITE_NVD_MODE;
+  const cveBlockedReason =
+    cveMode !== "fixture"
+      ? "La consulta real de NVD está deshabilitada en esta versión del backend. El modo live no está disponible todavía."
+      : !writer
+        ? "Tu rol no permite iniciar consultas CVE."
+        : row.status !== "active"
+          ? "Activa el dispositivo antes de iniciar una consulta CVE."
+          : !row.current_identification
+            ? "Confirma primero una identificación CPE para este dispositivo."
+            : null;
   const found = runs.data?.items.find((item) => item.id === selectedRun);
   return (
     <div className="v2-page">
@@ -1347,15 +1358,20 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
       <section className="v2-panel rc2-panel">
         <h2>Consultas CVE del dispositivo</h2>
         <p>
-          {import.meta.env.VITE_NVD_MODE === "disabled"
-            ? "Las consultas CVE están deshabilitadas en esta instalación. El historial conservado sigue disponible."
-            : "La consulta usa capturas fixture y el CPE confirmado. CVE externo está aplazado. Los resultados no confirman vulnerabilidades."}
+          {cveMode === "fixture"
+            ? "La consulta usa datos de demostración y el CPE confirmado. No consulta NVD en vivo ni confirma vulnerabilidades."
+            : "El historial conservado sigue disponible; las consultas reales de NVD están deshabilitadas en esta versión."}
         </p>
+        {cveBlockedReason && (
+          <p className="notice" role="status">
+            {cveBlockedReason}
+          </p>
+        )}
         {active && (
           <button
             className="v2-primary-button"
             disabled={
-              import.meta.env.VITE_NVD_MODE === "disabled" ||
+              cveMode !== "fixture" ||
               !row.current_identification ||
               analyze.isPending
             }
