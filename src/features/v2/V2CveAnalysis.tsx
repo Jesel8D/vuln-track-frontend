@@ -285,6 +285,7 @@ export function V2CveAnalysis({
   activeApplication: boolean;
 }) {
   const { api, user } = useAuth();
+  const nvdMode = import.meta.env.VITE_NVD_MODE || "disabled";
   const cache = useQueryClient();
   const scope = [user?.id, workspaceId, applicationId, technologyId].join(":");
   const cachedIntent = v2AnalysisIntents.get(scope);
@@ -408,7 +409,11 @@ export function V2CveAnalysis({
     <section className="v2-cve-analysis">
       <div className="v2-cve-analysis-heading">
         <div>
-          <p className="v2-eyebrow">CONSULTA CVE DE DEMOSTRACIÓN</p>
+          <p className="v2-eyebrow">
+            {nvdMode === "live"
+              ? "CONSULTA CVE EN NVD"
+              : "CONSULTA CVE DE DEMOSTRACIÓN"}
+          </p>
           <h3>Capturas CVE e historial</h3>
           <p>
             {selectedCpe ? <code>{selectedCpe}</code> : "Sin CPE seleccionado"}
@@ -419,7 +424,7 @@ export function V2CveAnalysis({
             className="v2-secondary-button"
             onClick={requestAnalysis}
             disabled={
-              import.meta.env.VITE_NVD_MODE === "disabled" ||
+              nvdMode === "disabled" ||
               !confirmed ||
               !selectedCpe ||
               start.isPending
@@ -437,14 +442,18 @@ export function V2CveAnalysis({
               <>
                 <Play size={15} />{" "}
                 {runId
-                  ? "Nueva consulta de demostración"
-                  : "Consultar CVE de demostración"}
+                  ? nvdMode === "live"
+                    ? "Nueva consulta en NVD"
+                    : "Nueva consulta de demostración"
+                  : nvdMode === "live"
+                    ? "Consultar CVE en NVD"
+                    : "Consultar CVE de demostración"}
               </>
             )}
           </button>
         )}
       </div>
-      {import.meta.env.VITE_NVD_MODE === "disabled" ? (
+      {nvdMode === "disabled" ? (
         <p className="v2-analysis-help">
           Las consultas CVE están deshabilitadas en esta instalación. El
           historial conservado sigue disponible.
