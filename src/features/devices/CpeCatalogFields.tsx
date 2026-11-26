@@ -351,7 +351,7 @@ export function CpeCatalogFields({
   if (deprecated) candidateParams.set("deprecated", deprecated);
   const build = (resource: string, values: URLSearchParams) =>
     "/" + resource + "?" + values;
-  const cveMode = import.meta.env.VITE_NVD_MODE;
+  const cveMode = import.meta.env.VITE_NVD_MODE || "disabled";
   const clearVersion = () => {
     setVersion("");
     onSelect(null);
@@ -382,6 +382,12 @@ export function CpeCatalogFields({
           Consultas CVE en modo demostración.{" "}
           {mode === "live" &&
             "Para consultar CVE en este perfil, confirma un CPE de la captura fixture."}
+        </p>
+      )}
+      {cveMode === "live" && (
+        <p>
+          Las consultas CVE usan la API real de NVD y requieren confirmar el CPE.
+          Una coincidencia no demuestra por sí sola que el activo sea vulnerable.
         </p>
       )}
       {status.isPending && (
