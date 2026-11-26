@@ -13,7 +13,17 @@ describe("Aviso de procedencia NVD", () => {
     ).toHaveTextContent("NVD de fixture");
   });
 
-  it.each(["live", "", "disabled"])(
+  it("identifica consultas reales en modo live", () => {
+    vi.stubEnv("VITE_NVD_MODE", "live");
+    render(<FixtureNotice />);
+    const notice = screen.getByRole("note", { name: "Fuente NVD" });
+    expect(notice).toHaveTextContent("Consultas CVE reales · NVD");
+    expect(notice).toHaveTextContent(
+      "Son coincidencias potenciales y requieren validación humana",
+    );
+  });
+
+  it.each(["", "disabled"])(
     "no anuncia integración activa con configuración %s",
     (mode) => {
       vi.stubEnv("VITE_NVD_MODE", mode);
