@@ -1127,10 +1127,10 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
       </div>
     );
   const active = writer && row.status === "active";
-  const cveMode = import.meta.env.VITE_NVD_MODE;
+  const cveMode = import.meta.env.VITE_NVD_MODE || "disabled";
   const cveBlockedReason =
-    cveMode !== "fixture"
-      ? "La consulta real de NVD está deshabilitada en esta versión del backend. El modo live no está disponible todavía."
+    !["fixture", "live"].includes(cveMode)
+      ? "Las consultas CVE están deshabilitadas en esta instalación. Configura el backend y recompila el frontend para habilitar NVD."
       : !writer
         ? "Tu rol no permite iniciar consultas CVE."
         : row.status !== "active"
@@ -1360,7 +1360,9 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
         <p>
           {cveMode === "fixture"
             ? "La consulta usa datos de demostración y el CPE confirmado. No consulta NVD en vivo ni confirma vulnerabilidades."
-            : "El historial conservado sigue disponible; las consultas reales de NVD están deshabilitadas en esta versión."}
+            : cveMode === "live"
+              ? "La consulta obtiene CVE reales de NVD para el CPE confirmado. La coincidencia es indicativa y requiere validación del activo."
+              : "El historial conservado sigue disponible; las consultas CVE están deshabilitadas."}
         </p>
         {cveBlockedReason && (
           <p className="notice" role="status">
@@ -1371,13 +1373,13 @@ function DeviceDetail({ path, writer }: { path: string; writer: boolean }) {
           <button
             className="v2-primary-button"
             disabled={
-              cveMode !== "fixture" ||
+              !["fixture", "live"].includes(cveMode) ||
               !row.current_identification ||
               analyze.isPending
             }
             onClick={() => analyze.mutate(crypto.randomUUID())}
           >
-            Consultar CVE de demostración
+            {cveMode === "live" ? "Consultar CVE en NVD" : "Consultar CVE de demostración"}
           </button>
         )}
         <Feedback
