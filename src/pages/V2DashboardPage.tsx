@@ -250,7 +250,7 @@ function AnalysisTrend({ data }: { data: V2Dashboard }) {
 export function V2DashboardPage() {
   const { api, user } = useAuth();
   const { current, isPending, error } = useWorkspace();
-  const runtimeMode = import.meta.env.VITE_NVD_MODE;
+  const runtimeMode = import.meta.env.VITE_NVD_MODE || "disabled";
   const [mode, setMode] = useState<"fixture" | "live" | "unknown">(
     runtimeMode === "fixture" || runtimeMode === "live"
       ? runtimeMode
