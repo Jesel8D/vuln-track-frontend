@@ -286,7 +286,11 @@ export function RegisterPage() {
                   </small>
                   {(touched.confirmation || confirmation) &&
                     confirmationError && (
-                      <small id="confirmation-error" className="field-error">
+                      <small
+                        id="confirmation-error"
+                        className="field-error"
+                        aria-live="polite"
+                      >
                         {confirmationError}
                       </small>
                     )}
