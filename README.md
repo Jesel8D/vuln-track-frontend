@@ -2,7 +2,7 @@
 
 Interfaz React del inventario local de VulnTrack. Permite registro/inicio de sesión, workspaces, dispositivos, aplicaciones, tecnologías, búsqueda y confirmación CPE, historial, revisión de hallazgos y recomendaciones asociadas. Owner/editor pueden escribir; viewer consulta. El servidor y PostgreSQL aplican la autorización.
 
-El dashboard principal usa inventario y cobertura CPE registrados. Los resúmenes CVE y sus gráficas existentes se conservan en una sección plegable de **demostración e historial**; no representan un análisis real ni riesgo confirmado. El catálogo oficial CPE local no convierte un resultado CVE fixture en real. Consultas CVE externas, ZAP, verificación remota, gestión de riesgos y despliegue público están aplazados.
+El dashboard principal usa inventario y cobertura CPE registrados. Los resúmenes CVE y sus gráficas existentes se conservan en una sección plegable de **demostración e historial**; no representan un análisis real ni riesgo confirmado. El catálogo oficial CPE local no convierte un resultado CVE fixture en real. La interfaz incluye el flujo CVE live detrás de `VITE_NVD_MODE=live`, siempre que el backend también esté configurado explícitamente para consultar NVD. La configuración de ejemplo y la instalación documentada usan `disabled`/fixture. ZAP, verificación remota, gestión de riesgos y despliegue público siguen aplazados.
 
 La fuente actual de esta instalación es [el índice vigente](../evolucion-vulntrack/00_INDICE_DOCUMENTACION_VIGENTE.md). Consulte [operación](../evolucion-vulntrack/MANUAL_OPERACION_LOCAL.md), [funciones y límites](../evolucion-vulntrack/AUDITORIA_FINAL_FUNCIONAL.md) y [resultados](../evolucion-vulntrack/RESULTADOS_VALIDACION_FINAL_FASE_5.md). Los informes antiguos en `docs/` son históricos.
 
@@ -19,7 +19,7 @@ npm ci
 npm run check
 ```
 
-La instalación persistente de esta laptop se inicia desde Backend mediante `scripts.v2_development up --profile rc3-catalog31 --frontend ../vuln-track-frontend --nvd-mode fixture`: configura API y fixture y conserva los volúmenes. Frontend `http://127.0.0.1:5191`, API `http://127.0.0.1:8018`. Para un servidor de desarrollo manual configurar `VITE_API_URL` según el contrato de `src/services/api.ts` y `VITE_NVD_MODE=fixture`; ver `.env.example`. Ninguna variable del frontend activa live en Backend. No incluir secretos en variables `VITE_*`: son públicas.
+La instalación persistente local se inicia desde Backend mediante `scripts.v2_development up --profile rc3-catalog31 --frontend ../vuln-track-frontend --nvd-mode fixture`: configura API y fixture y conserva los volúmenes. Frontend `http://127.0.0.1:5191`, API `http://127.0.0.1:8018`. Para un servidor de desarrollo manual configurar `VITE_API_URL` según `src/services/api.ts` y `VITE_NVD_MODE=disabled` o `fixture`; ver `.env.example`. Para CVE live, habilitar backend conscientemente y compilar con `VITE_NVD_MODE=live`; la bandera del frontend por sí sola no activa las consultas en el servidor. No incluir secretos en variables `VITE_*`: son públicas.
 
 ## Rutas y sesión
 
