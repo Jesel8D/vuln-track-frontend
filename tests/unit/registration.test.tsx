@@ -43,9 +43,7 @@ it("validates confirmation locally without making a request", async () => {
   const request = vi.spyOn(api, "registerAccount");
   const user = await fill("Another synthetic phrase 7319!");
   await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
-  expect(screen.getByRole("alert")).toHaveTextContent(
-    "Las contraseñas no coinciden",
-  );
+  expect(screen.getByText("Las contraseñas no coinciden.")).toBeVisible();
   expect(request).not.toHaveBeenCalled();
 });
 
@@ -97,7 +95,9 @@ it("shows controlled throttling feedback and clears passwords on failure", async
     "text",
   );
   await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("60 segundos");
+  expect(
+    await screen.findByText(/Espera al menos 60 segundos antes de reintentar/),
+  ).toBeVisible();
   expect(screen.getByLabelText("Contraseña", { exact: true })).toHaveValue("");
   expect(screen.getByLabelText("Confirmar contraseña")).toHaveValue("");
   expect(
