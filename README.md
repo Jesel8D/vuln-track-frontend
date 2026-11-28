@@ -2,6 +2,10 @@
 
 Interfaz React del inventario local de VulnTrack. Permite registro/inicio de sesión, workspaces, dispositivos, aplicaciones, tecnologías, búsqueda y confirmación CPE, historial, revisión de hallazgos y recomendaciones asociadas. Owner/editor pueden escribir; viewer consulta. El servidor y PostgreSQL aplican la autorización.
 
+## About
+
+Aplicación web de VulnTrack para gestionar workspaces, dispositivos y aplicaciones, confirmar identificaciones CPE y consultar el historial y los hallazgos disponibles desde el backend. El estado real de cada función y las limitaciones de esta versión se detallan en el resto de este README.
+
 El dashboard principal usa inventario y cobertura CPE registrados. Los resúmenes CVE y sus gráficas existentes se conservan en una sección plegable de **demostración e historial**; no representan un análisis real ni riesgo confirmado. El catálogo oficial CPE local no convierte un resultado CVE fixture en real. Consultas CVE externas, ZAP, verificación remota, gestión de riesgos y despliegue público están aplazados.
 
 La fuente actual de esta instalación es [el índice vigente](../evolucion-vulntrack/00_INDICE_DOCUMENTACION_VIGENTE.md). Consulte [operación](../evolucion-vulntrack/MANUAL_OPERACION_LOCAL.md), [funciones y límites](../evolucion-vulntrack/AUDITORIA_FINAL_FUNCIONAL.md) y [resultados](../evolucion-vulntrack/RESULTADOS_VALIDACION_FINAL_FASE_5.md). Los informes antiguos en `docs/` son históricos.
